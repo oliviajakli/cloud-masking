@@ -1,0 +1,23 @@
+paths:
+  input: data/per_scene_confusion_results.csv
+  output_dir: results
+  figures_dir: results/figures
+
+algorithms:
+  - hybrid
+  - s2cloudless
+  - cloudscoreplus
+
+metrics:
+  - f1_score
+  - iou
+  - mcc
+
+algorithm_pairs:
+  - [hybrid, s2cloudless]
+  - [hybrid, cloudscoreplus]
+  - [s2cloudless, cloudscoreplus]
+
+statistics:
+  alpha: 0.05
+  random_seed: 42
