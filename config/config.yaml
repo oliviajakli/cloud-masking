@@ -2,6 +2,10 @@ paths:
   input: data/per_scene_confusion_results.csv
   output_dir: results
   figures_dir: results/figures
+  reference_dir: data/reference
+  cloudscoreplus_dir: data/cloudscoreplus
+  hybrid_dir: data/hybrid
+  s2cloudless_dir: data/s2cloudless
 
 algorithms:
   - hybrid
