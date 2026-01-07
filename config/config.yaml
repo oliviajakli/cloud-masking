@@ -13,6 +13,11 @@ metrics:
   - iou
   - mcc
 
+samples:
+  - 202104
+  - 202009
+  - 202506
+
 algorithm_pairs:
   - [hybrid, s2cloudless]
   - [hybrid, cloudscoreplus]
