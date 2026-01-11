@@ -2,10 +2,14 @@ paths:
   input: data/per_scene_confusion_results.csv
   output_dir: results
   figures_dir: results/figures
-  reference_dir: data/reference
-  cloudscoreplus_dir: data/cloudscoreplus
-  hybrid_dir: data/hybrid
-  s2cloudless_dir: data/s2cloudless
+  reference_masks_dir: data/masks/reference
+  cloudscoreplus_masks_dir: data/masks/cloudscoreplus
+  hybrid_masks_dir: data/masks/hybrid
+  s2cloudless_masks_dir: data/masks/s2cloudless
+  reference_samples_dir: data/samples/reference
+  cloudscoreplus_samples_dir: data/samples/cloudscoreplus
+  hybrid_samples_dir: data/samples/hybrid
+  s2cloudless_samples_dir: data/samples/s2cloudless
 
 algorithms:
   - hybrid
