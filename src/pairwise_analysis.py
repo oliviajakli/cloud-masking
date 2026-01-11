@@ -1,5 +1,4 @@
 import pandas as pd
-from src.utils.config import load_config
 from scipy.stats import shapiro
 from pathlib import Path
 import matplotlib.pyplot as plt
@@ -9,15 +8,8 @@ import os
 from src.utils.io import save_csv
 from src.utils.plotting import save_figure
 
-config = load_config()
 
-input_data = Path(config["paths"]["input"])
-pairs = config["algorithm_pairs"]
-output_dir = Path(config["paths"]["output_dir"])
-
-df = pd.read_csv(input_data)
-
-def compute_pairwise_differences(df):
+def compute_pairwise_differences(df, output_dir):
     # Pivot to wide format (scenes x algorithms). Algorithms will be in alphabetical order.
     mcc_wide = df.pivot(index='scene_id', columns='algorithm', values='mcc')
     # Compute pairwise differences. Cloud Score+ is at index 0.
@@ -36,12 +28,16 @@ def compute_pairwise_differences(df):
     save_csv(diff_df, output_path)
     return diff_hy_s2, diff_hy_cs, diff_s2_cs
 
-def test_normality():
-    diff_hy_s2, diff_hy_cs, diff_s2_cs = compute_pairwise_differences(df)
+def test_normality(df, pairs, output_dir):
+    diff_hy_s2, diff_hy_cs, diff_s2_cs = compute_pairwise_differences(df, output_dir)
 
     # Shapiro–Wilk normality test for pairwise differences.
     for label, diff in zip(pairs, [diff_hy_s2, diff_hy_cs, diff_s2_cs]):
         stat, p = shapiro(diff)
+        # Save normality test results as CSV.
+        output_path = output_dir / f"shapiro_wilk_{label.replace(' ', '_').replace('-', 'vs')}.csv"
+        result_df = pd.DataFrame({'algorithm_pair': [label], 'statistic': [stat], 'p_value': [p]})
+        save_csv(result_df, output_path)
         print(f"{label}: stat = {stat:.4f}, p = {p:.4f}")
 
     diff_series_list = [
