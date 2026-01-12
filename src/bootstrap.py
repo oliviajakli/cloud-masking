@@ -6,6 +6,12 @@ from glob import glob
 from sklearn.metrics import matthews_corrcoef
 from tqdm import tqdm
 
+# Tile-based block bootstrap.
+# Divide each sample into spatial tiles (256×256 px) and resample tiles within
+# a sample. Bootstrap the 15 samples with replacement, recompute the metric
+# median for each algorithm, and compute bootstrap percentiles for metrics and
+# paired differences. Two-level bootstrap with 1,000 internal repetitions
+# (tile-level), and 2,000 repetitions globally.
 
 def list_scenes(gt_folder, alg_folder):
     """
