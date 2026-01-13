@@ -11,6 +11,10 @@ output_dir = Path(config["paths"]["output_dir"])
 
 df = pd.read_csv(input_data)
 
-compute_pairwise_differences(df, output_dir)
+def main():
+    compute_pairwise_differences(df, output_dir)
+    test_normality(df, pairs, output_dir)
+    return "Pairwise analysis completed. Results saved to:", output_dir
 
-test_normality(df, pairs, output_dir)
+if __name__ == "__main__":
+    print(main())

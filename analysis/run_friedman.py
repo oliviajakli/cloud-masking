@@ -11,4 +11,9 @@ output_dir = Path(config["paths"]["output_dir"])
 
 df = pd.read_csv(input_data)
 
-run_friedman_test(df)
+def main():
+    run_friedman_test(df)
+    return "Friedman test completed. Results saved to:", output_dir
+
+if __name__ == "__main__":
+    print(main())

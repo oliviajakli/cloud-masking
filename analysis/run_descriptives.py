@@ -19,12 +19,17 @@ output_dir = Path(config["paths"]["output_dir"])
 
 df = pd.read_csv(input_data)
 
-compute_descriptive_stats(df, output_dir)
-plot_distributions(df, metrics, output_dir)
-plot_boxplots_with_stats(df, metrics, pairs, algorithms, output_dir)
-bootstrap_ci(df, random_state=config["statistics"]["random_state"])
-plot_paired_differences(df, metrics, pairs, output_dir)
-plot_bland_altman(df, pairs, output_dir)
-plot_error_maps(algorithms, samples, reference_masks, config, output_dir)
-plot_scatterplot(df, metrics, output_dir)
-plot_time_series(df, metrics, output_dir)
+def main():
+    compute_descriptive_stats(df, output_dir)
+    plot_distributions(df, metrics, output_dir)
+    plot_boxplots_with_stats(df, metrics, pairs, algorithms, output_dir)
+    bootstrap_ci(df, random_state=config["statistics"]["random_state"])
+    plot_paired_differences(df, metrics, pairs, output_dir)
+    plot_bland_altman(df, pairs, output_dir)
+    plot_error_maps(algorithms, samples, reference_masks, config, output_dir)
+    plot_scatterplot(df, metrics, output_dir)
+    plot_time_series(df, metrics, output_dir)
+    return "Descriptive analysis and plots completed. Results saved to:", output_dir
+
+if __name__ == "__main__":
+    print(main())

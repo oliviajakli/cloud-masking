@@ -16,13 +16,17 @@ output_dir = Path(config["paths"]["output_dir"])
 
 df = pd.read_csv(input_data)
 
-# Compute precision-recall difference and add as a new column.
-df = compute_precision_recall_diff(df)
-# Generate summary table and save to CSV.
-summary_table(df)
-# Generate and save plots for directional bias.
-plot_directional_bias(df, output_dir)
+def main():
+    # Compute precision-recall difference and add as a new column.
+    df = compute_precision_recall_diff(df)
+    # Generate summary table and save to CSV.
+    summary_table(df)
+    # Generate and save plots for directional bias.
+    plot_directional_bias(df, output_dir)
+    return "Directional analysis completed. Results saved to:", output_dir
 
+if __name__ == "__main__":
+    print(main())
 
 
 
