@@ -14,6 +14,16 @@ from pathlib import Path
 
 from src.utils.plotting import save_figure
 
+def load_masks(folder_path):
+    """Load all mask file paths from a given folder."""
+    masks = []
+    for file in sorted(os.listdir(folder_path)):
+        if not file.lower().endswith('.tif'):
+            continue
+        with rasterio.open(os.path.join(folder_path, file)) as src:
+            mask = src.read()
+            masks.append(mask.flatten())
+    return np.concatenate(masks)
 
 def compute_metrics(masks_dir):
     # Define directories
