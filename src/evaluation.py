@@ -10,10 +10,9 @@ from sklearn.metrics import (
     jaccard_score, matthews_corrcoef
     )
 
-from utils.io import save_csv
 from pathlib import Path
 
-from utils.plotting import save_figure
+from src.utils.plotting import save_figure
 
 
 def compute_metrics(masks_dir):
@@ -69,9 +68,6 @@ def compute_metrics(masks_dir):
     df['FNR'] = df['FN'] / (df['FN'] + df['TP'])
     # Calculate cloud fraction (proportion of cloud pixels to total pixels) per scene.
     df["cloud_fraction"] = (df["TP"] + df["FP"]) / (df["TP"] + df["TN"] + df["FP"] + df["FN"])
-    # Save to CSV
-    output_csv = os.path.join('data', 'per_scene_evaluation_metrics.csv')
-    save_csv(df, Path(output_csv))
     return df
 
 def plot_confusion_matrix(cm, title):
