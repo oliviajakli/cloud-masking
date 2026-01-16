@@ -16,9 +16,12 @@ reference_masks = Path(config["paths"]["reference_masks_dir"])
 def main():
     # Run evaluation metrics, plot confusion matrices, and save results.
     df = compute_metrics(masks_dir)
+    reference_masks_list = load_masks(reference_masks)
     for alg in algorithms:
-        cm = confusion_matrix(load_masks(reference_masks), load_masks(Path(config["paths"][f"{alg}_masks_dir"])))
-        plot_confusion_matrix(cm, title=f"{alg} Confusion Matrix")
+        alg_masks_list = load_masks(Path(config["paths"][f"{alg}_masks_dir"]))
+        for i, (ref_mask, alg_mask) in enumerate(zip(reference_masks_list, alg_masks_list)):
+            cm = confusion_matrix(ref_mask, alg_mask)
+            plot_confusion_matrix(cm, title=f"{alg} Confusion Matrix Scene {i+1}")
     # Save to CSV
     output_csv = os.path.join('data', 'per_scene_evaluation_metrics.csv')
     save_csv(df, Path(output_csv))
