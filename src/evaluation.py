@@ -23,7 +23,7 @@ def load_masks(folder_path):
         with rasterio.open(os.path.join(folder_path, file)) as src:
             mask = src.read()
             masks.append(mask.flatten())
-    return np.concatenate(masks)
+    return masks
 
 def compute_metrics(masks_dir):
     # Define directories
@@ -93,4 +93,4 @@ def plot_confusion_matrix(cm, title):
     plt.title(title)
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
-    save_figure(plt.gcf(), Path(f"results/{title.replace(' ', '_').lower()}_confusion_matrix.png"))
+    save_figure(plt.gcf(), Path(f"results/matrices/{title.replace(' ', '_').lower()}.png"))
