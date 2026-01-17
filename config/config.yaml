@@ -13,9 +13,9 @@ paths:
   s2cloudless_samples_dir: data/samples/s2cloudless
 
 algorithms:
-  - hybrid
-  - s2cloudless
   - cloudscoreplus
+  - s2cloudless
+  - hybrid
 
 metrics:
   - f1_score
