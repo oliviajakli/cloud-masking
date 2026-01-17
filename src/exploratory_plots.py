@@ -196,7 +196,7 @@ def plot_bland_altman(df, pairs, output_dir):
 def plot_error_maps(algorithms, samples, reference_masks, config, output_dir):
     for alg, sample in itertools.product(algorithms, samples):
         reference_path = f"{reference_masks}/{sample}.tif"
-        predicted_path = f"{Path(config["paths"][f"{alg}_dir"])}/{sample}.tif"
+        predicted_path = f"{Path(config["paths"][f"{alg}_masks_dir"])}/{sample}.tif"
         out_path = f"{output_dir}/error_map_{alg}_{sample}.tif"
 
         with rasterio.open(reference_path) as ref_ds, rasterio.open(predicted_path) as pred_ds:
