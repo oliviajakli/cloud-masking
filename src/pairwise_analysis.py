@@ -32,8 +32,10 @@ def test_normality(df, pairs, output_dir):
     diff_hy_s2, diff_hy_cs, diff_s2_cs = compute_pairwise_differences(df, output_dir)
 
     # Shapiro–Wilk normality test for pairwise differences.
-    for label, diff in zip(pairs, [diff_hy_s2, diff_hy_cs, diff_s2_cs]):
+    for pair, diff in zip(pairs, [diff_hy_s2, diff_hy_cs, diff_s2_cs]):
         stat, p = shapiro(diff)
+        # Create label from pair tuple/list
+        label = f"{pair[0]} - {pair[1]}" if isinstance(pair, (list, tuple)) else pair
         # Save normality test results as CSV.
         output_path = output_dir / f"shapiro_wilk_{label.replace(' ', '_').replace('-', 'vs')}.csv"
         result_df = pd.DataFrame({'algorithm_pair': [label], 'statistic': [stat], 'p_value': [p]})
