@@ -1,0 +1,4 @@
+algorithm_pair,uncorrected_p_value,corrected_p_value,reject_null,algorithm_a,algorithm_b,delta,effect_size,favors,ci_lower,ci_upper
+hybrid vs s2cloudless,0.0042724609375,0.008544921875,True,hybrid,s2cloudless,-0.5022222222222222,large,s2cloudless,-0.8133333333333334,-0.19111111111111112
+hybrid vs cloudscoreplus,6.103515625e-05,0.00018310546875,True,hybrid,cloudscoreplus,-0.5733333333333334,large,cloudscoreplus,-0.8755555555555555,-0.37777777777777777
+s2cloudless vs cloudscoreplus,0.00836181640625,0.008544921875,True,s2cloudless,cloudscoreplus,-0.3333333333333333,medium,cloudscoreplus,-0.6535555555555554,-0.1111111111111111
