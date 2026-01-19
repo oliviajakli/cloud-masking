@@ -12,9 +12,9 @@ config = load_config()
 
 DATA_ROOT = config["paths"]["data_root"]
 ALG_FOLDERS = {
-    'hybrid': f"{DATA_ROOT}/hybrid",
-    's2cloudless': f"{DATA_ROOT}/s2cloudless",
-    'cloudscoreplus': f"{DATA_ROOT}/cloudscoreplus"
+    'hybrid': f"{DATA_ROOT}/masks/hybrid",
+    's2cloudless': f"{DATA_ROOT}/masks/s2cloudless",
+    'cloudscoreplus': f"{DATA_ROOT}/masks/cloudscoreplus"
 }
 
 TILE_SIZE = 256        # tile size in pixels
