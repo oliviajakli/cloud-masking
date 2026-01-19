@@ -7,7 +7,6 @@ from sklearn.metrics import confusion_matrix
 
 config = load_config()
 
-input_data = Path(config["paths"]["input"])
 algorithms = config["algorithms"]
 
 masks_dir = Path(config["paths"]["data_root"]) / "masks"
