@@ -18,7 +18,7 @@ def run_posthoc_wilcoxon(df, pairs):
         print(f"{a} vs {b}: corrected p-value = {p_c:.4f}, reject = {r}")
     results_df = pd.DataFrame({
         'algorithm_pair': [f"{a} vs {b}" for (a, b) in pairs],
-        'uncorrected_p_value': p_unc,
+        'uncorrected_p_value': pvals,
         'corrected_p_value': p_corr,
         'reject_null': rej
     })
