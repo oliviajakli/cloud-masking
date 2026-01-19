@@ -1,5 +1,5 @@
 from scipy.stats import wilcoxon
-from statsmodels.stats import multitest as smm
+import statsmodels.stats.multitest as smm
 import pandas as pd
 import numpy as np
 from cliffs_delta import cliffs_delta
