@@ -1,5 +1,5 @@
 paths:
-  input: data/per_scene_confusion_results.csv
+  input: data/per_scene_evaluation_metrics.csv
   output_dir: results
   figures_dir: results/figures
   data_root: data
