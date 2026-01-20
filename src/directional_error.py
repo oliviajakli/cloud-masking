@@ -5,8 +5,8 @@ import seaborn as sns
 import os
 from pathlib import Path
 from scipy.stats import wilcoxon
-from utils.plotting import save_figure
-from utils.io import save_csv
+from src.utils.plotting import save_figure
+from src.utils.io import save_csv
 
 def compute_precision_recall_diff(df):
     """
@@ -95,4 +95,4 @@ def plot_directional_bias(df, output_dir):
     plt.title("Commission vs. Omission Bias per Algorithm")
 
     fig_path = os.path.join(output_dir, "directional_bias_violinplot.png")
-    save_figure(plt, Path(fig_path))
+    save_figure(plt.gcf(), Path(fig_path))
