@@ -10,13 +10,10 @@ import pandas as pd
 config = load_config()
 
 input_data = Path(config["paths"]["input"])
-random_state = config["statistics"]["random_state"]
 output_dir = Path(config["paths"]["output_dir"])
 
 
-df = pd.read_csv(input_data)
-
-def main():
+def main(df: pd.DataFrame) -> tuple[str, Path]:
     # Compute precision-recall difference and add as a new column.
     df = compute_precision_recall_diff(df)
     # Generate summary table and save to CSV.
@@ -26,7 +23,9 @@ def main():
     return "Directional analysis completed. Results saved to:", output_dir
 
 if __name__ == "__main__":
-    print(main())
+    df = pd.read_csv(input_data)
+    message, path = main(df)
+    print(message, path)
 
 
 
