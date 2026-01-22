@@ -14,7 +14,7 @@ from pathlib import Path
 
 from src.utils.plotting import save_figure
 
-def load_masks(folder_path: str) -> list[np.ndarray]:
+def load_masks(folder_path: Path) -> list[np.ndarray]:
     """Load all mask file paths from a given folder.
     params:
         folder_path: str, path to folder containing mask files
@@ -30,7 +30,7 @@ def load_masks(folder_path: str) -> list[np.ndarray]:
             masks.append(mask.flatten())    # 1D array shape for metric computations.
     return masks
 
-def compute_metrics(masks_dir: str) -> pd.DataFrame:
+def compute_metrics(masks_dir: Path) -> pd.DataFrame:
     """Compute evaluation metrics for cloud masks in the given directory.
     params:
         masks_dir: str, path to the directory containing 'reference' and algorithm subdirectories
