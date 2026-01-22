@@ -3,12 +3,11 @@ from src.utils.config import load_config
 from src.utils.io import save_csv
 from pathlib import Path
 import os
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix    # type: ignore
 
 config = load_config()
 
 algorithms = config["algorithms"]
-
 masks_dir = Path(config["paths"]["data_root"]) / "masks"
 reference_masks = Path(config["paths"]["reference_masks_dir"])
 
@@ -21,10 +20,11 @@ def main():
         for i, (ref_mask, alg_mask) in enumerate(zip(reference_masks_list, alg_masks_list)):
             cm = confusion_matrix(ref_mask, alg_mask)
             plot_confusion_matrix(cm, title=f"{alg} Confusion Matrix Scene {i+1}")
-    # Save to CSV
+    # Save evaluation metrics to CSV in the data directory to use for analysis.
     output_csv = os.path.join('data', 'per_scene_evaluation_metrics.csv')
     save_csv(df, Path(output_csv))
     return "Evaluation completed. Metrics saved to:", output_csv
 
 if __name__ == "__main__":
-    print(main())
+    message, path = main()
+    print(message, path)
