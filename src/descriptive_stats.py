@@ -1,11 +1,17 @@
 import os
-import pandas as pd
+import pandas as pd     # type: ignore
 from src.utils.io import save_csv
 from pathlib import Path
 
 # Check measures of central tendency and dispersion for each algorithm.
-def compute_descriptive_stats(df, output_dir):
-    # Compute median (what is typical) and standard deviation (consistency) per algorithm.
+def compute_descriptive_stats(df: pd.DataFrame, output_dir: Path) -> None:
+    """Compute median (what is typical) and standard deviation (consistency) per algorithm.
+    Args:
+        df (pd.DataFrame): DataFrame containing columns 'algorithm', 'f1_score', 'iou', 'mcc'.
+        output_dir (str): Directory to save the summary CSV file.
+    Returns:
+        None
+    """
     f1score_summary = df.groupby('algorithm')['f1_score'].agg(['median', 'mean', 'std'])
     iou_summary = df.groupby('algorithm')['iou'].agg(['median', 'mean', 'std'])
     mcc_summary = df.groupby('algorithm')['mcc'].agg(['median', 'mean', 'std'])
