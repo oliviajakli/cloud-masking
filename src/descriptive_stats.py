@@ -8,7 +8,7 @@ def compute_descriptive_stats(df: pd.DataFrame, output_dir: Path) -> None:
     """Compute median (what is typical) and standard deviation (consistency) per algorithm.
     Args:
         df (pd.DataFrame): DataFrame containing columns 'algorithm', 'f1_score', 'iou', 'mcc'.
-        output_dir (str): Directory to save the summary CSV file.
+        output_dir (Path): Directory to save the summary CSV file.
     Returns:
         None
     """
