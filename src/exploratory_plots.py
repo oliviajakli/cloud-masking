@@ -2,19 +2,26 @@ import os
 from pathlib import Path
 import itertools
 import rasterio
-import pandas as pd
+import pandas as pd   # type: ignore
 import numpy as np
-import seaborn as sns
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-from matplotlib.colors import ListedColormap
+import seaborn as sns   # type: ignore
+import matplotlib.pyplot as plt    # type: ignore
+import matplotlib.patches as mpatches   # type: ignore
+from matplotlib.colors import ListedColormap    # type: ignore
 from scipy.stats import wilcoxon
 from statannotations.Annotator import Annotator
 
 from src.utils.plotting import save_figure
 
-def plot_distributions(df, metrics, output_dir):
-    # Check data distribution by plotting histograms and KDEs for each metric, by algorithm.
+def plot_distributions(df: pd.DataFrame, metrics: list, output_dir: Path) -> None:
+    """ Check data distribution by plotting histograms and KDEs for each metric, by algorithm.
+    Args:
+        df (pd.DataFrame): DataFrame containing metrics and algorithm labels.
+        metrics (list): List of metric column names to plot.
+        output_dir (Path): Directory to save the plots.
+    Returns:
+        None
+    """
     for metric in metrics:
         plt.figure(figsize=(7, 5))
 
@@ -42,9 +49,19 @@ def plot_distributions(df, metrics, output_dir):
         plt.title(f'Distribution of {metric.replace("_", " ").title()} (Histogram + KDE)')
         plt.xlabel(metric.replace("_", " ").title())
         plt.ylabel('Density')
-        save_figure(plt.gcf(), Path(fig_path), dpi=300)
+        save_figure(plt.gcf(), Path(fig_path))
 
-def plot_boxplots_with_stats(df, metrics, pairs, algorithms, output_dir):
+def plot_boxplots_with_stats(df: pd.DataFrame, metrics: list, pairs: list, algorithms: list, output_dir: Path) -> None:
+    """Plot boxplots for each metric across algorithms with statistical annotations.
+    Args:
+        df (pd.DataFrame): DataFrame containing metrics and algorithm labels.
+        metrics (list): List of metric column names to plot.
+        pairs (list of tuples): List of algorithm pairs for statistical comparison.
+        algorithms (list): List of algorithm names.
+        output_dir (Path): Directory to save the plots.
+    Returns:
+        None
+    """
     sns.set_theme(style="whitegrid", font_scale=1)
 
     for metric in metrics:
@@ -52,17 +69,17 @@ def plot_boxplots_with_stats(df, metrics, pairs, algorithms, output_dir):
         ax = sns.boxplot(data=df, x="algorithm", y=metric, hue="algorithm", palette="pastel", showmeans=True, legend=False)
         sns.stripplot(data=df, x="algorithm", y=metric, color="gray", size=5, alpha=0.6, jitter=True)
 
-        # Compute Wilcoxon signed-rank tests for each pair (paired because same samples)
+        # Compute Wilcoxon signed-rank tests for each pair (paired because same samples).
         p_values = []
         for a1, a2 in pairs:
-            # Extract paired values using the same samples
+            # Extract paired values using the same samples.
             vals1 = df.loc[df["algorithm"] == a1, metric].values
             vals2 = df.loc[df["algorithm"] == a2, metric].values
-            # Run Wilcoxon signed-rank test (paired, non-parametric)
+            # Run Wilcoxon signed-rank test (paired, non-parametric).
             stat, p = wilcoxon(vals1, vals2)
             p_values.append(p)
 
-        # Add annotations
+        # Add annotations to the boxplot.
         annotator = Annotator(ax, pairs, data=df, x="algorithm", y=metric)
         annotator.configure(test=None, text_format="star", loc="inside")
         annotator.set_pvalues(p_values)
@@ -84,14 +101,32 @@ def plot_boxplots_with_stats(df, metrics, pairs, algorithms, output_dir):
         fig_path = os.path.join(output_dir, f"{metric}_boxplot.png")
         save_figure(plt.gcf(), Path(fig_path), dpi=300)
 
-def bootstrap_ci(data, n_boot=10000, ci=95, random_state=42):
+def bootstrap_ci(data: np.ndarray, n_boot: int = 10000, ci: float = 95, random_state: int = 42) -> tuple:
+    """Compute bootstrap confidence interval for the mean of the data.
+    Args:
+        data (array-like): Input data for bootstrapping.
+        n_boot (int): Number of bootstrap samples.
+        ci (float): Confidence interval percentage.
+        random_state (int): Random seed for reproducibility.
+    Returns:
+        tuple: (mean, lower_bound, upper_bound)
+    """
     rng = np.random.default_rng(random_state)
     boot_means = [np.mean(rng.choice(data, size=len(data), replace=True)) for _ in range(n_boot)]
     lower = np.percentile(boot_means, (100 - ci) / 2)
     upper = np.percentile(boot_means, 100 - (100 - ci) / 2)
     return np.mean(data), lower, upper
 
-def plot_paired_differences(df, metrics, pairs, output_dir):
+def plot_paired_differences(df: pd.DataFrame, metrics: list, pairs: list, output_dir: Path) -> None:
+    """Plot paired differences for each metric between algorithm pairs with bootstrap CIs and Wilcoxon p-values.
+    Args:
+        df (pd.DataFrame): DataFrame containing metrics and algorithm labels.
+        metrics (list): List of metric column names to plot.
+        pairs (list of tuples): List of algorithm pairs for comparison.
+        output_dir (Path): Directory to save the plots.
+    Returns:
+        None
+    """
     for metric in metrics:
         n_pairs = len(pairs)
         fig, axes = plt.subplots(1, n_pairs, figsize=(6 * n_pairs, 5), sharey=True)
@@ -99,27 +134,27 @@ def plot_paired_differences(df, metrics, pairs, output_dir):
             axes = [axes]
 
         for ax, (a1, a2) in zip(axes, pairs):
-            # --- Subset and pivot for this pair ---
+            # Subset and pivot for this pair of algorithms.
             df_sub = df[df["algorithm"].isin([a1, a2])]
             df_pivot = df_sub.pivot(index="scene_id", columns="algorithm", values=metric)
 
-            # Skip if any algorithm missing
+            # Skip if any algorithm is missing data.
             if a1 not in df_pivot.columns or a2 not in df_pivot.columns:
                 print(f"Missing data for {a1} or {a2}, skipping.")
                 continue
 
-            # --- Compute differences ---
+            # Compute differences and statistics.
             diffs = df_pivot[a1] - df_pivot[a2]
             mean_diff, ci_low, ci_high = bootstrap_ci(diffs)
             stat, p = wilcoxon(df_pivot[a1], df_pivot[a2])
 
-            # --- Identify outliers (±1.5×IQR) ---
+            # Identify outliers (±1.5×IQR) for annotation.
             q1, q3 = np.percentile(diffs, [25, 75])
             iqr = q3 - q1
             lower_fence, upper_fence = q1 - 1.5 * iqr, q3 + 1.5 * iqr
             outliers = diffs[(diffs < lower_fence) | (diffs > upper_fence)]
 
-            # --- Plot differences ---
+            # Plot differences as stripplot.
             sns.stripplot(y=diffs, color="gray", size=6, jitter=False, ax=ax)
             ax.axhline(0, color="black", linestyle="--", linewidth=1)
             ax.axhline(mean_diff, color="blue", linestyle="-", linewidth=2)
@@ -128,11 +163,11 @@ def plot_paired_differences(df, metrics, pairs, output_dir):
                 color="blue", alpha=0.2, label="95% Bootstrap CI"
             )
 
-            # --- Annotate outliers ---
+            # Annotate outliers with scene IDs.
             for sid, val in outliers.items():
                 ax.text(0.05, val, sid, fontsize=9, color="red", va="center")
 
-            # --- Title & labels ---
+            # Title & labels with stats.
             ax.set_title(
                 f"{a1} − {a2}\nMean Δ = {mean_diff:.3f}, 95% CI [{ci_low:.3f}, {ci_high:.3f}]\nWilcoxon p = {p:.4f}",
                 fontsize=12
@@ -147,48 +182,53 @@ def plot_paired_differences(df, metrics, pairs, output_dir):
         save_figure(plt.gcf(), Path(fig_path), dpi=300)
         print(f"Saved paired difference plot for {metric}")
 
-def plot_bland_altman(df, pairs, output_dir):
+def plot_bland_altman(df: pd.DataFrame, pairs: list, output_dir: Path) -> None:
+    """Generate Bland-Altman plots for cloud fraction between algorithm pairs.
+    Args:
+        df (pd.DataFrame): DataFrame containing 'scene_id', 'algorithm', and 'cloud_fraction'.
+        pairs (list of tuples): List of algorithm pairs for comparison.
+        output_dir (Path): Directory to save the plots.
+    Returns:
+        None
+    """
     for a1, a2 in pairs:
-        # Pivot to align scene_id values
+        # Pivot to align scene_id values for both algorithms.
         df_pivot = df.pivot(index="scene_id", columns="algorithm", values="cloud_fraction")
 
-        # Compute means and differences
+        # Compute means and differences for Bland-Altman.
         means = df_pivot[[a1, a2]].mean(axis=1)
         diffs = df_pivot[a1] - df_pivot[a2]
 
-        # Compute statistics
+        # Compute statistics for Bland-Altman.
         mean_diff = diffs.mean()
         sd_diff = diffs.std(ddof=1)
         loa_upper = mean_diff + 1.96 * sd_diff
         loa_lower = mean_diff - 1.96 * sd_diff
 
-        # Create plots.
         plt.figure(figsize=(8, 6))
         sns.scatterplot(x=means, y=diffs, color="gray", s=70, alpha=0.8, edgecolor="black")
         # Add a regression line to check proportional bias.
         sns.regplot(x=means, y=diffs, scatter=False, color="black", ci=None)
 
-        # Horizontal reference lines
+        # Horizontal reference lines for mean difference and limits of agreement.
         plt.axhline(mean_diff, color="blue", linestyle="-", linewidth=1.8, label=f"Mean diff = {mean_diff:.3f}")
         plt.axhline(loa_upper, color="red", linestyle="--", linewidth=1.2, label=f"+1.96 SD = {loa_upper:.3f}")
         plt.axhline(loa_lower, color="red", linestyle="--", linewidth=1.2, label=f"-1.96 SD = {loa_lower:.3f}")
 
-        # Shaded band for limits of agreement
+        # Shaded band for limits of agreement (i.e., confidence interval).
         plt.fill_between(means, loa_lower, loa_upper, color="red", alpha=0.05)
 
-        # Labels
         plt.title(f"Bland–Altman Plot: {a1} vs {a2} (Cloud Fraction)", fontsize=14)
         plt.xlabel("Mean Cloud Fraction", fontsize=12)
         plt.ylabel(f"Difference ({a1} - {a2})", fontsize=12)
         plt.legend(loc="upper right", frameon=True)
         plt.grid(True, linestyle=":", alpha=0.6)
 
-        # Text annotations for limits and mean diff
+        # Text annotations for limits and mean diff on the plot.
         plt.text(0.05, mean_diff, f"Mean diff = {mean_diff:.3f}", color="blue", fontsize=10)
         plt.text(0.05, loa_upper, f"+1.96 SD = {loa_upper:.3f}", color="red", fontsize=10)
         plt.text(0.05, loa_lower, f"-1.96 SD = {loa_lower:.3f}", color="red", fontsize=10)
 
-        # Save to file
         file_name = f"bland_altman_{a1}_vs_{a2}_cloud_fraction.png"
         save_figure(plt.gcf(), Path(os.path.join(output_dir, file_name)), dpi=300)
         print(f"Saved: {file_name}")
