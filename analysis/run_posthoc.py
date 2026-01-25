@@ -1,8 +1,8 @@
 from src.posthoc_tests import run_posthoc_wilcoxon, effect_size_cliffs_delta, bootstrap_cliffs_delta
 from src.utils.config import load_config
 from pathlib import Path
-import pandas as pd
-import numpy as np
+import pandas as pd    # type: ignore
+import numpy as np   # type: ignore
 from src.utils.io import save_csv
 
 config = load_config()
@@ -12,9 +12,14 @@ pairs = config["algorithm_pairs"]
 random_seed = config["statistics"]["random_seed"]
 output_dir = Path(config["paths"]["output_dir"])
 
-df = pd.read_csv(input_data)
-
-def main():
+def main(df: pd.DataFrame) -> str:
+    """Run post-hoc Wilcoxon signed-rank tests with Holm-Bonferroni correction
+    and calculate Cliff's Delta effect sizes with bootstrap CIs.
+    Args:
+        df (pd.DataFrame): DataFrame with algorithm results.
+    Returns:
+        str: Message indicating where results are saved.
+    """
     # Pivot to wide format (scenes x algorithms). Algorithms will be in alphabetical order.
     mcc_wide = df.pivot(index='scene_id', columns='algorithm', values='mcc')
     # Set random seed for reproducibility
@@ -38,6 +43,7 @@ def main():
     )
     out_path = output_dir / "posthoc_cliffs_delta_results.csv"
 
+    # Calculate bootstrap 95% CIs for Cliff's Delta for each pair.
     for (a, b) in pairs:
         print(f"\nBootstrap 95% CI for {a} vs {b}")
         ci_lower, ci_upper = bootstrap_cliffs_delta(
@@ -58,4 +64,5 @@ def main():
     return f"Post-hoc results saved to {out_path}"
 
 if __name__ == "__main__":
-    print(main())
+    df = pd.read_csv(input_data)
+    print(main(df))

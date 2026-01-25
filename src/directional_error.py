@@ -1,24 +1,35 @@
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
+import numpy as np  # type: ignore
+import pandas as pd     # type: ignore
+import matplotlib.pyplot as plt # type: ignore
+import seaborn as sns   # type: ignore
 import os
 from pathlib import Path
-from scipy.stats import wilcoxon
+from scipy.stats import wilcoxon    # type: ignore
 from src.utils.plotting import save_figure
 from src.utils.io import save_csv
 
-def compute_precision_recall_diff(df):
+def compute_precision_recall_diff(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Adds a column:
-        pr_diff = precision - recall
+    Adds a column: pr_diff = precision - recall.
+    Args:
+        df (pd.DataFrame): DataFrame with 'precision' and 'recall' columns.
+    Returns:
+        pd.DataFrame: DataFrame with added 'pr_diff' column.
     """
     df = df.copy()
     df["pr_diff"] = df["precision"] - df["recall"]
     return df
 
-def bootstrap_median_ci(x, n_boot=5000, ci=95, random_state=42):
-    """Computes bootstrap confidence interval for the median of x."""
+def bootstrap_median_ci(x: np.ndarray, n_boot: int = 5000, ci: int = 95, random_state: int = 42) -> tuple[float, float, float]:
+    """Computes bootstrap confidence interval for the median of x.
+    Args:
+        x (np.ndarray): Input data array.
+        n_boot (int): Number of bootstrap samples.
+        ci (int): Confidence interval percentage.
+        random_state (int): Random seed for reproducibility.
+    Returns:
+        tuple[float, float, float]: Median, lower CI bound, upper CI bound.
+    """
     rng = np.random.default_rng(random_state)
     x = np.asarray(x)
     x = x[~np.isnan(x)]
@@ -34,8 +45,13 @@ def bootstrap_median_ci(x, n_boot=5000, ci=95, random_state=42):
 
     return np.median(x), lower, upper
 
-def wilcoxon_vs_zero(x):
-    """Performs Wilcoxon signed-rank test against zero."""
+def wilcoxon_vs_zero(x: np.ndarray) -> float:
+    """Performs Wilcoxon signed-rank test against zero.
+    Args:
+        x (np.ndarray): Input data array.
+    Returns:
+        float: p-value from the Wilcoxon test.
+    """
     x = np.asarray(x)
     x = x[~np.isnan(x)]
 
@@ -45,8 +61,13 @@ def wilcoxon_vs_zero(x):
     stat, p = wilcoxon(x, zero_method="wilcox", alternative="two-sided")
     return p
 
-def summary_table(df):
-    """Computes summary statistics for each algorithm in the dataframe."""
+def summary_table(df: pd.DataFrame) -> pd.DataFrame:
+    """Computes summary statistics for each algorithm in the dataframe.
+    Args:
+        df (pd.DataFrame): Input dataframe with 'pr_diff' column.
+    Returns:
+        pd.DataFrame: Summary statistics dataframe.
+    """
     summary_rows = []
 
     for algo, g in df.groupby("algorithm"):
@@ -68,8 +89,14 @@ def summary_table(df):
     save_csv(summary_df, Path(summary_path))
     return summary_df
 
-def plot_directional_bias(df, output_dir):
-    """Generates and saves a violin plot of precision-recall differences."""
+def plot_directional_bias(df: pd.DataFrame, output_dir: Path) -> None:
+    """Generates and saves a violin plot of precision-recall differences.
+    Args:
+        df (pd.DataFrame): Input dataframe with 'pr_diff' column.
+        output_dir (Path): Directory to save the plot.
+    Returns:
+        None
+    """
     plt.figure(figsize=(9, 5))
 
     sns.violinplot(

@@ -5,7 +5,7 @@ from src.directional_error import (
 )
 from src.utils.config import load_config
 from pathlib import Path
-import pandas as pd
+import pandas as pd   # type: ignore
 
 config = load_config()
 
@@ -14,6 +14,12 @@ output_dir = Path(config["paths"]["output_dir"])
 
 
 def main(df: pd.DataFrame) -> tuple[str, Path]:
+    """Main function to run directional error analysis.
+    Args:
+        df (pd.DataFrame): Input dataframe with precision and recall data.
+    Returns:
+        tuple[str, Path]: Message and path to output directory.
+    """
     # Compute precision-recall difference and add as a new column.
     df = compute_precision_recall_diff(df)
     # Generate summary table and save to CSV.
