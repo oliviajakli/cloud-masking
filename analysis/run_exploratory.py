@@ -20,12 +20,12 @@ output_dir = Path(config["paths"]["output_dir"])
 def main(df):
     compute_descriptive_stats(df, output_dir)
     plot_distributions(df, metrics, output_dir)
-    plot_boxplots_with_stats(df, metrics, pairs, algorithms, f"{output_dir}/boxplots")
-    plot_paired_differences(df, metrics, pairs, f"{output_dir}/paired_differences")
-    plot_bland_altman(df, pairs, f"{output_dir}/bland_altman")
-    plot_error_maps(algorithms, samples, reference_masks, config, f"{output_dir}/error_maps")
-    plot_scatterplot(df, metrics, f"{output_dir}/scatterplots")
-    plot_time_series(df, metrics, f"{output_dir}/time_series")
+    plot_boxplots_with_stats(df, metrics, pairs, algorithms, Path(f"{output_dir}/boxplots"))
+    plot_paired_differences(df, metrics, pairs, Path(f"{output_dir}/paired_differences"))
+    plot_bland_altman(df, pairs, Path(f"{output_dir}/bland_altman"))
+    plot_error_maps(algorithms, samples, reference_masks, config, Path(f"{output_dir}/error_maps"))
+    plot_scatterplot(df, metrics, Path(f"{output_dir}/scatterplots"))
+    plot_time_series(df, metrics, Path(f"{output_dir}/time_series"))
     return "Descriptive analysis and plots completed. Results saved to:", output_dir
 
 if __name__ == "__main__":
