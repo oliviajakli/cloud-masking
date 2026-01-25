@@ -1,15 +1,15 @@
 import os
 from pathlib import Path
 import itertools
-import rasterio
+import rasterio     # type: ignore
 import pandas as pd   # type: ignore
-import numpy as np
+import numpy as np  # type: ignore
 import seaborn as sns   # type: ignore
 import matplotlib.pyplot as plt    # type: ignore
 import matplotlib.patches as mpatches   # type: ignore
 from matplotlib.colors import ListedColormap    # type: ignore
-from scipy.stats import wilcoxon
-from statannotations.Annotator import Annotator
+from scipy.stats import wilcoxon    # type: ignore
+from statannotations.Annotator import Annotator # type: ignore
 
 from src.utils.plotting import save_figure
 
@@ -99,7 +99,7 @@ def plot_boxplots_with_stats(df: pd.DataFrame, metrics: list, pairs: list, algor
 
         plt.tight_layout()
         fig_path = os.path.join(output_dir, f"{metric}_boxplot.png")
-        save_figure(plt.gcf(), Path(fig_path), dpi=300)
+        save_figure(plt.gcf(), Path(fig_path))
 
 def bootstrap_ci(data: np.ndarray, n_boot: int = 10000, ci: float = 95, random_state: int = 42) -> tuple:
     """Compute bootstrap confidence interval for the mean of the data.
@@ -179,7 +179,7 @@ def plot_paired_differences(df: pd.DataFrame, metrics: list, pairs: list, output
         plt.suptitle(f"Paired Differences: {metric}", fontsize=15, y=1.02)
         plt.tight_layout()
         fig_path = os.path.join(output_dir, f"{metric}_paired_differences.png")
-        save_figure(plt.gcf(), Path(fig_path), dpi=300)
+        save_figure(plt.gcf(), Path(fig_path))
         print(f"Saved paired difference plot for {metric}")
 
 def plot_bland_altman(df: pd.DataFrame, pairs: list, output_dir: Path) -> None:
@@ -196,7 +196,7 @@ def plot_bland_altman(df: pd.DataFrame, pairs: list, output_dir: Path) -> None:
         df_pivot = df.pivot(index="scene_id", columns="algorithm", values="cloud_fraction")
 
         # Compute means and differences for Bland-Altman.
-        means = df_pivot[[a1, a2]].mean(axis=1)
+        means = df_pivot[[a1, a2]].mean(axis=1) 
         diffs = df_pivot[a1] - df_pivot[a2]
 
         # Compute statistics for Bland-Altman.
@@ -230,10 +230,20 @@ def plot_bland_altman(df: pd.DataFrame, pairs: list, output_dir: Path) -> None:
         plt.text(0.05, loa_lower, f"-1.96 SD = {loa_lower:.3f}", color="red", fontsize=10)
 
         file_name = f"bland_altman_{a1}_vs_{a2}_cloud_fraction.png"
-        save_figure(plt.gcf(), Path(os.path.join(output_dir, file_name)), dpi=300)
+        save_figure(plt.gcf(), Path(os.path.join(output_dir, file_name)))
         print(f"Saved: {file_name}")
 
-def plot_error_maps(algorithms, samples, reference_masks, config, output_dir):
+def plot_error_maps(algorithms: list, samples: list, reference_masks: Path, config: dict, output_dir: Path) -> None:
+    """Generate per-pixel error maps for each algorithm and sample compared to reference masks.
+    Args:
+        algorithms (list): List of algorithm names.
+        samples (list): List of sample identifiers.
+        reference_mask (Path): Directory containing reference mask files.
+        config (dict): Configuration dictionary with paths to algorithm mask directories.
+        output_dir (Path): Directory to save the error map plots.
+    Returns:
+        None
+    """
     for alg, sample in itertools.product(algorithms, samples):
         reference_path = f"{reference_masks}/{sample}.tif"
         predicted_path = f"{Path(config["paths"][f"{alg}_masks_dir"])}/{sample}.tif"
@@ -242,7 +252,7 @@ def plot_error_maps(algorithms, samples, reference_masks, config, output_dir):
         with rasterio.open(reference_path) as ref_ds, rasterio.open(predicted_path) as pred_ds:
             reference = ref_ds.read(1)
             predicted = pred_ds.read(1)
-
+        # Initialize error map (BG) and classify pixels into TP, TN, FP, FN.
         error_map = np.zeros_like(reference, dtype=np.uint8)
         error_map[(reference == 1) & (predicted == 1)] = 1
         error_map[(reference == 0) & (predicted == 0)] = 2
@@ -260,14 +270,22 @@ def plot_error_maps(algorithms, samples, reference_masks, config, output_dir):
 
         patches = [mpatches.Patch(color=colors[i+1], label=labels[i+1]) for i in range(4)]
         ax.legend(handles=patches, loc="lower center", bbox_to_anchor=(0.5, -0.05), ncol=2)
-        save_figure(plt.gcf(), Path(out_path), dpi=300)
+        save_figure(plt.gcf(), Path(out_path))
 
     print(f"Per-pixel error maps saved in {output_dir} folder.")
 
-def plot_scatterplot(df, metrics, output_dir):
+def plot_scatterplot(df: pd.DataFrame, metrics: list, output_dir: Path) -> None:
+    """Plot scatterplots of metrics against cloud fraction, colored by algorithm.
+    Args:
+        df (pd.DataFrame): DataFrame containing 'cloud_fraction', metrics, and 'algorithm
+        metrics (list): List of metric column names to plot.
+        output_dir (Path): Directory to save the plots.
+    Returns:
+        None
+    """
     df_clean = df.dropna(subset=['cloud_fraction'] + metrics)
 
-    # Facet plot: one subplot per metric
+    # Facet plot: one subplot per metric.
     for metric in metrics:
         plt.figure(figsize=(7, 5))
         sns.scatterplot(
@@ -279,7 +297,7 @@ def plot_scatterplot(df, metrics, output_dir):
             s=60
         )
 
-        # Add trend line
+        # Add trend line using regression.
         sns.regplot(
             data=df_clean,
             x='cloud_fraction',
@@ -294,9 +312,17 @@ def plot_scatterplot(df, metrics, output_dir):
         plt.ylabel(metric.replace("_", " ").title())
         plt.legend(title='Algorithm')
         fig_path = os.path.join(output_dir, f'cloud_fraction_scatter_{metric}.png')
-        save_figure(plt.gcf(), Path(fig_path), dpi=300)
+        save_figure(plt.gcf(), Path(fig_path))
 
-def plot_time_series(df, metrics, output_dir):
+def plot_time_series(df: pd.DataFrame, metrics: list, output_dir: Path) -> None:
+    """Plot time series of metrics over time, colored by algorithm.
+    Args:
+        df (pd.DataFrame): DataFrame containing 'scene_id', metrics, and 'algorithm
+        metrics (list): List of metric column names to plot.
+        output_dir (Path): Directory to save the plots.
+    Returns:
+        None
+    """
     # Replace 'date' with the actual column name if different (e.g., 'acquisition_date')
     df["date"] = df["scene_id"].astype(str).str.extract(r"(\d{6})")
     df["date"] = pd.to_datetime(df["date"], format="%Y%m")
@@ -309,7 +335,6 @@ def plot_time_series(df, metrics, output_dir):
         value_name="value"
     )
 
-    # Loop through each metric to create time series plots.
     for metric in metrics:
         subset = melted[melted["metric"] == metric]
 
@@ -319,13 +344,12 @@ def plot_time_series(df, metrics, output_dir):
             x="date",
             y="value",
             hue="algorithm",
-            errorbar="sd",            # show ±1 standard deviation as confidence interval
+            errorbar="sd",        # show ±1 standard deviation as confidence interval.
             marker="o",
             linewidth=1.8,
             alpha=0.9
         )
 
-        # Add title and labels
         plt.title(f"{metric.upper()} Over Time by Algorithm", fontsize=14)
         plt.xlabel("Date", fontsize=12)
         plt.ylabel(metric.upper(), fontsize=12)
@@ -333,6 +357,5 @@ def plot_time_series(df, metrics, output_dir):
         plt.legend(title="Algorithm", bbox_to_anchor=(1.02, 1), loc="upper left", frameon=False)
         plt.tight_layout()
 
-        # Save each metric plot
         out_path = os.path.join(output_dir, f"time_series_{metric}_by_algorithm.png")
-        save_figure(plt.gcf(), Path(out_path), dpi=300)
+        save_figure(plt.gcf(), Path(out_path))
