@@ -1,15 +1,23 @@
-import pandas as pd
+import pandas as pd     # type: ignore
 from scipy.stats import shapiro
 from pathlib import Path
-import matplotlib.pyplot as plt
-import seaborn as sns
+import matplotlib.pyplot as plt # type: ignore
+import seaborn as sns   # type: ignore
 import os
 
 from src.utils.io import save_csv
 from src.utils.plotting import save_figure
 
 
-def compute_pairwise_differences(df, output_dir):
+def compute_pairwise_differences(df: pd.DataFrame, output_dir: Path) -> tuple[pd.Series, pd.Series, pd.Series]:
+    """Compute pairwise differences in MCC between algorithms.
+    Args:
+        df (pd.DataFrame): DataFrame with columns 'scene_id', 'algorithm', 'mcc'.
+        output_dir (Path): Directory to save output CSV files.
+    Returns:
+        tuple[pd.Series, pd.Series, pd.Series]: Pairwise differences in MCC:
+            (hybrid - s2cloudless, hybrid - cloudscoreplus, s2cloudless - cloudscoreplus)
+    """
     # Pivot to wide format (scenes x algorithms). Algorithms will be in alphabetical order.
     mcc_wide = df.pivot(index='scene_id', columns='algorithm', values='mcc')
     # Compute pairwise differences. Cloud Score+ is at index 0.
@@ -17,7 +25,7 @@ def compute_pairwise_differences(df, output_dir):
     diff_hy_s2 = mcc_wide.iloc[:, 1] - mcc_wide.iloc[:, 2]
     diff_hy_cs = mcc_wide.iloc[:, 1] - mcc_wide.iloc[:, 0]
     diff_s2_cs = mcc_wide.iloc[:, 2] - mcc_wide.iloc[:, 0]
-    # Save differences to output directory
+    # Save differences to output directory.
     output_path = output_dir / "pairwise_mcc_differences.csv"
     diff_df = pd.DataFrame({
         'scene_id': mcc_wide.index,
@@ -28,13 +36,21 @@ def compute_pairwise_differences(df, output_dir):
     save_csv(diff_df, output_path)
     return diff_hy_s2, diff_hy_cs, diff_s2_cs
 
-def test_normality(df, pairs, output_dir):
+def test_normality(df: pd.DataFrame, pairs: list, output_dir: Path) -> None:
+    """Test normality of pairwise differences in MCC using Shapiro–Wilk test.
+    Args:
+        df (pd.DataFrame): DataFrame with columns 'scene_id', 'algorithm', 'mcc'.
+        pairs (list): List of algorithm pairs to compare.
+        output_dir (Path): Directory to save output CSV files and figures.
+    Returns:
+        None
+    """
     diff_hy_s2, diff_hy_cs, diff_s2_cs = compute_pairwise_differences(df, output_dir)
 
     # Shapiro–Wilk normality test for pairwise differences.
     for pair, diff in zip(pairs, [diff_hy_s2, diff_hy_cs, diff_s2_cs]):
         stat, p = shapiro(diff)
-        # Create label from pair tuple/list
+        # Create label from pair tuple/list.
         label = f"{pair[0]} - {pair[1]}" if isinstance(pair, (list, tuple)) else pair
         # Save normality test results as CSV.
         output_path = output_dir / f"shapiro_wilk_{label.replace(' ', '_').replace('-', 'vs')}.csv"
