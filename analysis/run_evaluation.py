@@ -6,6 +6,8 @@ import os
 import logging
 from sklearn.metrics import confusion_matrix    # type: ignore
 
+from src.utils.logging import setup_logging    # type: ignore
+
 logger = logging.getLogger(__name__)
 
 config = load_config()
@@ -20,6 +22,7 @@ def main() -> tuple[str, str]:
         message: str, status message
         output_csv: str, path to saved CSV file with evaluation metrics
     """
+    setup_logging()
     logger.info("Starting evaluation process...")
     df = compute_metrics(masks_dir)
     reference_masks_list = load_masks(reference_masks)
