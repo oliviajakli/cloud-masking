@@ -3,10 +3,13 @@ import pandas as pd     # type: ignore
 import matplotlib.pyplot as plt # type: ignore
 import seaborn as sns   # type: ignore
 import os
+import logging
 from pathlib import Path
 from scipy.stats import wilcoxon    # type: ignore
 from src.utils.plotting import save_figure
 from src.utils.io import save_csv
+
+logger = logging.getLogger(__name__)
 
 def compute_precision_recall_diff(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -16,8 +19,10 @@ def compute_precision_recall_diff(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         pd.DataFrame: DataFrame with added 'pr_diff' column.
     """
+    logger.info("Computing precision-recall differences.")
     df = df.copy()
     df["pr_diff"] = df["precision"] - df["recall"]
+    logger.debug(f"Computed pr_diff for {len(df)} records.")
     return df
 
 def bootstrap_median_ci(x: np.ndarray, n_boot: int = 5000, ci: int = 95, random_state: int = 42) -> tuple[float, float, float]:
@@ -30,6 +35,7 @@ def bootstrap_median_ci(x: np.ndarray, n_boot: int = 5000, ci: int = 95, random_
     Returns:
         tuple[float, float, float]: Median, lower CI bound, upper CI bound.
     """
+    logger.info("Computing bootstrap median and confidence interval.")
     rng = np.random.default_rng(random_state)
     x = np.asarray(x)
     x = x[~np.isnan(x)]
@@ -42,7 +48,7 @@ def bootstrap_median_ci(x: np.ndarray, n_boot: int = 5000, ci: int = 95, random_
     alpha = (100 - ci) / 2
     lower = np.percentile(boot_medians, alpha)
     upper = np.percentile(boot_medians, 100 - alpha)
-
+    logger.debug(f"Bootstrap median: {np.median(x)}, CI: ({lower}, {upper})")
     return np.median(x), lower, upper
 
 def wilcoxon_vs_zero(x: np.ndarray) -> float:
@@ -52,13 +58,16 @@ def wilcoxon_vs_zero(x: np.ndarray) -> float:
     Returns:
         float: p-value from the Wilcoxon test.
     """
+    logger.info("Performing Wilcoxon signed-rank test against zero.")
     x = np.asarray(x)
     x = x[~np.isnan(x)]
 
+    # If all values are zero, return NaN p-value.
     if np.allclose(x, 0):
         return np.nan
 
     stat, p = wilcoxon(x, zero_method="wilcox", alternative="two-sided")
+    logger.debug(f"Wilcoxon test statistic: {stat}, p-value: {p}")
     return p
 
 def summary_table(df: pd.DataFrame) -> pd.DataFrame:
@@ -68,11 +77,13 @@ def summary_table(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         pd.DataFrame: Summary statistics dataframe.
     """
+    logger.info("Generating summary table for directional error analysis.")
     summary_rows = []
 
     for algo, g in df.groupby("algorithm"):
         median, ci_lo, ci_hi = bootstrap_median_ci(g["pr_diff"])
         p_value = wilcoxon_vs_zero(g["pr_diff"])
+        logger.debug(f"Algorithm: {algo}, Median: {median}, CI: ({ci_lo}, {ci_hi}), Wilcoxon p-value: {p_value}")
 
         summary_rows.append({
             "algorithm": algo,
@@ -84,9 +95,11 @@ def summary_table(df: pd.DataFrame) -> pd.DataFrame:
         })
 
     summary_df = pd.DataFrame(summary_rows)
+    logger.debug(f"Summary DataFrame:\n{summary_df}")
     # Save summary table
     summary_path = os.path.join("results", "directional_error_summary.csv")
     save_csv(summary_df, Path(summary_path))
+    logger.info(f"Saved summary table to {summary_path}.")
     return summary_df
 
 def plot_directional_bias(df: pd.DataFrame, output_dir: Path) -> None:
@@ -97,6 +110,7 @@ def plot_directional_bias(df: pd.DataFrame, output_dir: Path) -> None:
     Returns:
         None
     """
+    logger.info("Generating directional bias violin plot.")
     plt.figure(figsize=(9, 5))
 
     sns.violinplot(
@@ -107,6 +121,7 @@ def plot_directional_bias(df: pd.DataFrame, output_dir: Path) -> None:
         cut=0
     )
 
+    # Overlay strip plot for individual points/samples.
     sns.stripplot(
         data=df,
         x="algorithm",
@@ -123,3 +138,4 @@ def plot_directional_bias(df: pd.DataFrame, output_dir: Path) -> None:
 
     fig_path = os.path.join(output_dir, "directional_bias_violinplot.png")
     save_figure(plt.gcf(), Path(fig_path))
+    logger.info(f"Saved directional bias plot to {fig_path}.")

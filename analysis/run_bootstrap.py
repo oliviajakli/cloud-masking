@@ -8,6 +8,7 @@ from src.bootstrap import (
 )
 from src.utils.config import load_config
 from src.utils.io import save_csv
+from src.utils.logging import setup_logging
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,7 @@ def main() -> tuple[str, Path]:
     Returns:
         tuple[str, Path]: Message and path to output directory.
     """
+    setup_logging()
     logger.info("Starting two-level bootstrap analysis for cloud detection algorithms.")
     # First, identify scenes available across all algorithms.
     scenes_set: set[str] | None = None
