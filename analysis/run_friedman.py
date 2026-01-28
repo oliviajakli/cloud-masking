@@ -1,7 +1,11 @@
 from src.friedman import run_friedman_test
 from pathlib import Path
 import pandas as pd     # type: ignore
+import logging
 from src.utils.config import load_config
+from src.utils.logging import setup_logging
+
+logger = logging.getLogger(__name__)
 
 config = load_config()
 
@@ -16,7 +20,10 @@ def main(df: pd.DataFrame) -> tuple[str, Path]:
     Returns:
         str: Message indicating where results are saved.
     """
+    setup_logging()
+    logger.info("Starting Friedman test analysis.")
     run_friedman_test(df)
+    logger.info("Friedman test analysis completed.")
     return "Friedman test completed. Results saved to:", output_dir
 
 if __name__ == "__main__":
