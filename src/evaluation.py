@@ -27,6 +27,10 @@ def load_masks(folder_path: Path) -> list[np.ndarray]:
     # Must be sorted to ensure comparison with reference masks is correct.
     for file in sorted(os.listdir(folder_path)):
         logger.info(f"Loading mask file: {file}")
+        # Check that folder is not empty.
+        if len(file) == 0:
+            logger.warning(f"No files found in folder: {folder_path}")
+            raise FileNotFoundError(f"No files found in folder: {folder_path}")
         if not file.lower().endswith('.tif'):
             continue
         with rasterio.open(os.path.join(folder_path, file)) as src:
@@ -43,6 +47,9 @@ def compute_metrics(masks_dir: Path) -> pd.DataFrame:
     returns: pd.DataFrame with computed metrics for each scene and algorithm
     """
     ref_dir = os.path.join(masks_dir, 'reference')
+    # Ensure reference directory exists.
+    Path(ref_dir).mkdir(parents=True, exist_ok=True)
+    logger.info(f"Reference masks directory: {ref_dir}")
 
     # List of algorithm folders (each subfolder in 'masks' except 'reference').
     algorithms = [d for d in os.listdir(masks_dir) 
@@ -55,6 +62,9 @@ def compute_metrics(masks_dir: Path) -> pd.DataFrame:
         alg_dir = os.path.join(masks_dir, alg)
         # Sort to ensure comparison with reference masks is correct.
         for file_name in sorted(os.listdir(alg_dir)):
+            if len(file_name) == 0:
+                logger.warning(f"No files found in algorithm folder: {alg_dir}")
+                raise FileNotFoundError(f"No files found in algorithm folder: {alg_dir}")
             logger.info(f"Evaluating algorithm '{alg}' on file: {file_name}")
             if not file_name.lower().endswith('.tif'):
                 continue
@@ -108,6 +118,13 @@ def plot_confusion_matrix(cm: np.ndarray, title: str) -> None:
         cm: confusion matrix (2D numpy array)
         title: str, title for the plot
     """
+    # Check that confusion matrix array is 2x2 and non-empty.
+    if cm.shape != (2, 2):
+        logger.error(f"Confusion matrix must be 2x2. Received shape: {cm.shape}")
+        raise ValueError("Confusion matrix must be 2x2.")
+    if np.sum(cm) == 0:
+        logger.error("Confusion matrix is empty (all zeros). Cannot plot.")
+        raise ValueError("Confusion matrix is empty (all zeros). Cannot plot.")
     cm_percent = cm / cm.sum() * 100
     labels = np.asarray([
         [f"{count:,}\n({percent:.2f}%)" for count, percent in zip(row, row_p)]
