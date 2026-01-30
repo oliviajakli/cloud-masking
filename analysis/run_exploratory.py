@@ -26,20 +26,28 @@ def main(df):
     setup_logging()
     logger.info("Starting descriptive analysis and plotting...")
     logger.debug(f"Input DataFrame head:\n{df.head()}")
+    # Compute cumulative median, mean, and std dev for each algorithm and metric.
     compute_descriptive_stats(df, metrics, output_dir)
     logger.info("Descriptive statistics computed.")
+    # Histogram with KDE plots for each metric and algorithm.
     plot_distributions(df, metrics, output_dir)
     logger.info("Distribution plots created.")
+    # Paired boxplots with statistical annotations.
     plot_boxplots_with_stats(df, metrics, pairs, algorithms, Path(f"{output_dir}/boxplots"))
     logger.info("Boxplots with statistical annotations created.")
+    # Paired difference plots for clear visualization of mean differences.
     plot_paired_differences(df, metrics, pairs, Path(f"{output_dir}/paired_differences"))
     logger.info("Paired difference plots created.")
+    # Bland-Altman plots to assess agreement between algorithm pairs.
     plot_bland_altman(df, pairs, Path(f"{output_dir}/bland_altman"))
     logger.info("Bland-Altman plots created.")
+    # Per-pixel error maps for visualizing spatial error distributions.
     plot_error_maps(algorithms, samples, reference_masks, config, Path(f"{output_dir}/error_maps"))
     logger.info("Per-pixel error maps created.")
+    # Scatterplots for metric relationships.
     plot_scatterplot(df, metrics, Path(f"{output_dir}/scatterplots"))
     logger.info("Scatterplots created.")
+    # Time series plots for metrics over samples.
     plot_time_series(df, metrics, Path(f"{output_dir}/time_series"))
     logger.info("Time series plots created.")
     logger.info("Descriptive analysis and plotting completed.")
