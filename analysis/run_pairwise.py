@@ -1,11 +1,12 @@
-from src.pairwise_analysis import compute_pairwise_differences, plot_normality, shapiro_wilk_test
+from src.normality_check import compute_pairwise_differences, plot_normality, shapiro_wilk_test
 from src.utils.config import load_config
+from src.utils.logging import setup_logging
+from src.utils.validator import DataValidator
+
 from pathlib import Path
 import pandas as pd   # type: ignore
 import logging
 
-from src.utils.logging import setup_logging
-from src.utils.validator import DataValidator
 
 logger = logging.getLogger(__name__)
 
