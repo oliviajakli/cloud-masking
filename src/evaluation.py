@@ -31,6 +31,7 @@ def load_masks(folder_path: Path) -> list[np.ndarray]:
         if len(file) == 0:
             logger.warning(f"No files found in folder: {folder_path}")
             raise FileNotFoundError(f"No files found in folder: {folder_path}")
+        # Only process .tif files.
         if not file.lower().endswith('.tif'):
             continue
         with rasterio.open(os.path.join(folder_path, file)) as src:
@@ -80,6 +81,7 @@ def compute_metrics(masks_dir: Path) -> pd.DataFrame:
                 logger.debug(f"Reference mask shape: {ref_arr.shape}, Algorithm mask shape: {alg_arr.shape}")
 
             cm = confusion_matrix(ref_arr, alg_arr)
+
             # Flatten arrays (view of original, more memory efficient than flatten()).
             tn, fp, fn, tp = cm.ravel()
             logger.info(f"Confusion Matrix for scene '{scene_id}', algorithm '{alg}': TP={tp}, TN={tn}, FP={fp}, FN={fn}")
@@ -96,16 +98,14 @@ def compute_metrics(masks_dir: Path) -> pd.DataFrame:
                 'recall': recall_score(ref_arr, alg_arr),   # Specificity
                 'f1_score': f1_score(ref_arr, alg_arr),
                 'iou': jaccard_score(ref_arr, alg_arr),
-                'mcc': matthews_corrcoef(ref_arr, alg_arr)
+                'mcc': matthews_corrcoef(ref_arr, alg_arr),
+                'FPR': fp / (fp + tn),
+                'FNR': fn / (fn + tp),
+                'cloud_fraction': (tp + fp) / (tp + tn + fp + fn)
             })
 
     df = pd.DataFrame(records)
 
-    # Compute false positive and false negatives rates.
-    df['FPR'] = df['FP'] / (df['FP'] + df['TN'])
-    df['FNR'] = df['FN'] / (df['FN'] + df['TP'])
-    # Calculate cloud fraction (proportion of cloud pixels to total pixels) per scene.
-    df["cloud_fraction"] = (df["TP"] + df["FP"]) / (df["TP"] + df["TN"] + df["FP"] + df["FN"])
     logger.info("Completed computation of evaluation metrics.")
     logger.debug(f"Metrics DataFrame:\n{df.head()}")
     logger.debug(f"DataFrame shape: {df.shape}, columns: {df.columns.tolist()}")
