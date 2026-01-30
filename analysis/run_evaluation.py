@@ -1,13 +1,14 @@
 from src.evaluation import load_masks, compute_metrics, plot_confusion_matrix
 from src.utils.config import load_config
 from src.utils.io import save_csv
-from pathlib import Path
-import os
-import logging
-from sklearn.metrics import confusion_matrix    # type: ignore
-
 from src.utils.logging import setup_logging
 from src.utils.validator import DataValidator    # type: ignore
+
+import os
+import logging
+from pathlib import Path
+from sklearn.metrics import confusion_matrix    # type: ignore
+
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +49,7 @@ def main() -> tuple[str, str]:
             "mcc": lambda s: s.between(-1, 1),
             "FPR": lambda s: s.between(0, 1),
             "FNR": lambda s: s.between(0, 1),
-            "cloud_fraction": lambda s: s.between(0, 1),
+            "cloud_fraction": lambda s: s.between(0, 1)
         }
     )
     validator.validate_strict(df, context="metrics pre-save")
