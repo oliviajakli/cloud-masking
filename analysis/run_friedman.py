@@ -4,6 +4,7 @@ import pandas as pd     # type: ignore
 import logging
 from src.utils.config import load_config
 from src.utils.logging import setup_logging
+from src.validation.data_validator import DataValidator
 
 logger = logging.getLogger(__name__)
 
@@ -28,5 +29,14 @@ def main(df: pd.DataFrame) -> tuple[str, Path]:
 
 if __name__ == "__main__":
     df = pd.read_csv(input_data)
+    validator = DataValidator(
+        required_columns=set(config["validation"]["required_columns"]),
+        metric_columns=set(config["validation"]["metric_columns"]),
+        expected_algorithms=set(pairs.keys()),
+        value_constraints={
+            "mcc": lambda s: s.between(-1, 1)
+        }
+    )
+    validator.validate_light(df)
     message, path = main(df)
     print(message, path)
