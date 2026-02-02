@@ -12,11 +12,20 @@ from sklearn.metrics import confusion_matrix    # type: ignore
 
 logger = logging.getLogger(__name__)
 
-config = load_config()
+# Load and validate configuration
+try:
+    config = load_config()
+except FileNotFoundError as e:
+    raise SystemExit(f"Configuration file not found: {e}")
+except Exception as e:
+    raise SystemExit(f"Failed to load configuration: {e}")
 
-algorithms = config["algorithms"]
-masks_dir = Path(config["paths"]["data_root"]) / "masks"
-reference_masks = Path(config["paths"]["reference_masks_dir"])
+try:
+    algorithms = config["algorithms"]
+    masks_dir = Path(config["paths"]["data_root"]) / "masks"
+    reference_masks = Path(config["paths"]["reference_masks_dir"])
+except KeyError as e:
+    raise SystemExit(f"Missing required configuration key: {e}")
 
 def main() -> tuple[str, str]:
     """Run evaluation metrics, plot confusion matrices, and save results.

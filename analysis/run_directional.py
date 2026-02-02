@@ -14,10 +14,19 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-config = load_config()
+# Load and validate configuration
+try:
+    config = load_config()
+except FileNotFoundError as e:
+    raise SystemExit(f"Configuration file not found: {e}")
+except Exception as e:
+    raise SystemExit(f"Failed to load configuration: {e}")
 
-input_data = Path(config["paths"]["input"])
-output_dir = Path(config["paths"]["output_dir"])
+try:
+    input_data = Path(config["paths"]["input"])
+    output_dir = Path(config["paths"]["output_dir"])
+except KeyError as e:
+    raise SystemExit(f"Missing required configuration key: {e}")
 
 
 def main(df: pd.DataFrame) -> tuple[str, Path]:

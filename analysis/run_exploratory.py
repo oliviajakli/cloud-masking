@@ -12,15 +12,24 @@ from src.utils.logging import setup_logging   # type: ignore
 
 logger = logging.getLogger(__name__)
 
-config = load_config()
+# Load and validate configuration
+try:
+    config = load_config()
+except FileNotFoundError as e:
+    raise SystemExit(f"Configuration file not found: {e}")
+except Exception as e:
+    raise SystemExit(f"Failed to load configuration: {e}")
 
-input_data = Path(config["paths"]["input"])
-metrics = config["metrics"]
-pairs = config["algorithm_pairs"]
-algorithms = config["algorithms"]
-samples = config["samples"]
-reference_masks = Path(config["paths"]["reference_masks_dir"])
-output_dir = Path(config["paths"]["output_dir"])
+try:
+    input_data = Path(config["paths"]["input"])
+    metrics = config["metrics"]
+    pairs = config["algorithm_pairs"]
+    algorithms = config["algorithms"]
+    samples = config["samples"]
+    reference_masks = Path(config["paths"]["reference_masks_dir"])
+    output_dir = Path(config["paths"]["output_dir"])
+except KeyError as e:
+    raise SystemExit(f"Missing required configuration key: {e}")
 
 def main(df):
     setup_logging()
