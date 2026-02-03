@@ -35,8 +35,28 @@ def main(df):
     setup_logging()
     logger.info("Starting descriptive analysis and plotting...")
     logger.debug(f"Input DataFrame head:\n{df.head()}")
+    before_counts = {
+        col: df[col].notna().sum() for col in [metrics]
+    }
     # Compute cumulative median, mean, and std dev for each algorithm and metric.
     compute_descriptive_stats(df, metrics, output_dir)
+    validator = DataValidator(
+        required_columns=set(config["validation"]["required_columns"]),
+        metric_columns=set(config["validation"]["metric_columns"]),
+        expected_algorithms=set(config["algorithms"]),
+        value_constraints={
+            "f1_score": lambda s: s.between(0, 1),
+            "precision": lambda s: s.between(0, 1),
+            "recall": lambda s: s.between(0, 1),
+            "iou": lambda s: s.between(0, 1),
+            "mcc": lambda s: s.between(-1, 1)
+        }
+    )
+    validator._validate_no_new_nans(
+        df,
+        reference_non_nulls=before_counts,
+        context=f"descriptive stats for metrics {metrics}"
+    )
     logger.info("Descriptive statistics computed.")
     # Histogram with KDE plots for each metric and algorithm.
     plot_distributions(df, metrics, output_dir)
@@ -67,14 +87,7 @@ if __name__ == "__main__":
     validator = DataValidator(
         required_columns=set(config["validation"]["required_columns"]),
         metric_columns=set(config["validation"]["metric_columns"]),
-        expected_algorithms=set(algorithms),
-        value_constraints={
-            "precision": lambda s: s.between(0, 1),
-            "recall": lambda s: s.between(0, 1),
-            "f1_score": lambda s: s.between(0, 1),
-            "iou": lambda s: s.between(0, 1),
-            "mcc": lambda s: s.between(-1, 1)
-        }
+        expected_algorithms=set(algorithms)
     )
     validator.validate_light(df, context="exploratory analysis")
     message, path = main(df)

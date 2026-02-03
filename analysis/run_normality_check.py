@@ -49,10 +49,7 @@ if __name__ == "__main__":
     validator = DataValidator(
         required_columns=set(config["validation"]["required_columns"]),
         metric_columns=set(config["validation"]["metric_columns"]),
-        expected_algorithms=set(config["algorithms"]),
-        value_constraints={
-            "mcc": lambda s: s.between(-1, 1)
-        }
+        expected_algorithms=set(config["algorithms"])
     )
     validator.validate_light(df, context="pairwise analysis")
     message, path = main(df)

@@ -41,11 +41,8 @@ if __name__ == "__main__":
     validator = DataValidator(
         required_columns=set(config["validation"]["required_columns"]),
         metric_columns=set(config["validation"]["metric_columns"]),
-        expected_algorithms=set(pairs.keys()),
-        value_constraints={
-            "mcc": lambda s: s.between(-1, 1)
-        }
+        expected_algorithms=set(pairs.keys())
     )
-    validator.validate_light(df)
+    validator.validate_light(df, context="Friedman test analysis")
     message, path = main(df)
     print(message, path)

@@ -54,12 +54,9 @@ if __name__ == "__main__":
     validator = DataValidator(
         required_columns=set(config["validation"]["required_columns"]),
         metric_columns=set(config["validation"]["metric_columns"]),
-        expected_algorithms=set(config["algorithm_pairs"].keys()),
-        value_constraints={
-            "precision": lambda s: s.between(0, 1),
-            "recall": lambda s: s.between(0, 1)
-        }
+        expected_algorithms=set(config["algorithm_pairs"].keys())
     )
+    validator.validate_light(df, context="directional analysis")
     message, path = main(df)
     print(message, path)
 
