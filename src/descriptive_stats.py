@@ -1,8 +1,10 @@
+from src.utils.io import save_csv
+
 import os
 import logging
-import pandas as pd     # type: ignore
-from src.utils.io import save_csv
 from pathlib import Path
+import pandas as pd     # type: ignore
+
 
 logger = logging.getLogger(__name__)
 
