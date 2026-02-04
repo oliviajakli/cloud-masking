@@ -82,7 +82,9 @@ def compute_metrics(masks_dir: Path) -> pd.DataFrame:
 
             # Flatten arrays (view of original, more memory efficient than flatten()).
             tn, fp, fn, tp = cm.ravel()
-            logger.info(f"Confusion Matrix for scene '{scene_id}', algorithm '{alg}': TP={tp}, TN={tn}, FP={fp}, FN={fn}")
+            logger.info(
+                f"Confusion Matrix for scene '{scene_id}', \
+                algorithm '{alg}': TP={tp}, TN={tn}, FP={fp}, FN={fn}")
 
             records.append({
                 'scene_id': scene_id,

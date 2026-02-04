@@ -1,3 +1,5 @@
+from src.utils.plotting import save_figure
+
 import os
 import logging
 from pathlib import Path
@@ -11,8 +13,6 @@ import matplotlib.patches as mpatches   # type: ignore
 from matplotlib.colors import ListedColormap    # type: ignore
 from scipy.stats import wilcoxon    # type: ignore
 from statannotations.Annotator import Annotator # type: ignore
-
-from src.utils.plotting import save_figure
 
 logger = logging.getLogger(__name__)
 

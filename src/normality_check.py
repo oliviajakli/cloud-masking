@@ -1,12 +1,13 @@
+from src.utils.io import save_csv
+from src.utils.plotting import save_figure
+
+import os
+import logging
 import pandas as pd     # type: ignore
 from scipy.stats import shapiro  # type: ignore
 from pathlib import Path
 import matplotlib.pyplot as plt # type: ignore
 import seaborn as sns   # type: ignore
-import os
-import logging
-from src.utils.io import save_csv
-from src.utils.plotting import save_figure
 
 logger = logging.getLogger(__name__)
 
