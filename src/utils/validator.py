@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Callable, Dict, Optional, Set
-import pandas as pd
-import numpy as np
+import pandas as pd # type: ignore
+import numpy as np  # type: ignore
 import logging
 
 logger = logging.getLogger(__name__)
@@ -106,6 +106,29 @@ class DataValidator:
                     f"Column '{col}' has {bad} invalid values"
                     f"{self._ctx(context)}"
                 )
+    
+    def _validate_no_new_nans(
+        self,
+        df: pd.DataFrame,
+        *,
+        reference_non_nulls: dict[str, int],
+        context: str
+    ):
+        """Detect if any new NaNs were introduced compared to reference counts.
+        Args:
+            df: DataFrame to check
+            reference_non_nulls: Mapping of column name to non-null count
+            context: Context string for error messages
+        Raises:
+            ValueError: If new NaNs are detected"""
+        for col, before_count in reference_non_nulls.items():
+            after_count = df[col].notna().sum()
+            if after_count < before_count:
+                raise ValueError(
+                    f"Column '{col}' lost {before_count - after_count} "
+                    f"non-null values{self._ctx(context)}"
+            )
+
 
     # ---------- LIGHT-ONLY ----------
     def _validate_metrics_light(self, df: pd.DataFrame, context: str):
