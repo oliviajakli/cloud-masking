@@ -1,5 +1,8 @@
+from src.utils.plotting import save_figure
+
 import os
 import logging
+from pathlib import Path
 import rasterio # type: ignore
 import numpy as np  # type: ignore
 import pandas as pd # type: ignore
@@ -10,10 +13,6 @@ from sklearn.metrics import (
     precision_score, recall_score, f1_score,
     jaccard_score, matthews_corrcoef
     )
-
-from pathlib import Path
-
-from src.utils.plotting import save_figure
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +57,6 @@ def compute_metrics(masks_dir: Path) -> pd.DataFrame:
     logger.info(f"Algorithms found for evaluation: {', '.join(algorithms)}")
 
     records = []  # Collect per-scene results.
-
     for alg in algorithms:
         alg_dir = os.path.join(masks_dir, alg)
         # Sort to ensure comparison with reference masks is correct.
@@ -109,7 +107,6 @@ def compute_metrics(masks_dir: Path) -> pd.DataFrame:
     logger.info("Completed computation of evaluation metrics.")
     logger.debug(f"Metrics DataFrame:\n{df.head()}")
     logger.debug(f"DataFrame shape: {df.shape}, columns: {df.columns.tolist()}")
-
     return df
 
 def plot_confusion_matrix(cm: np.ndarray, title: str) -> None:
