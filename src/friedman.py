@@ -1,17 +1,15 @@
 from scipy.stats import friedmanchisquare # type: ignore
-from pathlib import Path
 import pandas as pd     # type: ignore
 import logging
-from src.utils.io import save_csv
 
 logger = logging.getLogger(__name__)
 
-def run_friedman_test(df: pd.DataFrame) -> tuple:
+def run_friedman_test(df: pd.DataFrame) -> pd.DataFrame:
     """Run Friedman test on MCC scores across different algorithms.
     Args:
         df (pd.DataFrame): DataFrame containing 'scene_id', 'algorithm', and 'mcc' columns.
     Returns:
-        tuple: statistic and p-value from the Friedman test.
+        pd.DataFrame: DataFrame with statistic and p-value from the Friedman test.
     """
     logger.info("Running Friedman test on MCC scores across algorithms.")
     # Pivot to wide format (scenes x algorithms). Algorithms will be in alphabetical order.
@@ -25,6 +23,5 @@ def run_friedman_test(df: pd.DataFrame) -> tuple:
         'statistic': [stat],
         'p_value': [p_friedman]
     })
-    save_csv(results_df, path=Path("results/friedman_test_results.csv"))
     logger.info("Friedman test completed and results saved to CSV.")
-    return stat, p_friedman
+    return results_df
