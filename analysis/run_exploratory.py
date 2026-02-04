@@ -4,11 +4,13 @@ from src.exploratory_plots import (plot_distributions, plot_boxplots_with_stats,
     plot_time_series)
 from src.utils.validator import DataValidator
 from src.utils.config import load_config
+from src.utils.io import save_analysis_results, validate_output_path_for_df
+from src.utils.logging import setup_logging   # type: ignore
+
 from pathlib import Path
 import logging
 import pandas as pd # type: ignore
 
-from src.utils.logging import setup_logging   # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +41,8 @@ def main(df):
         col: df[col].notna().sum() for col in [metrics]
     }
     # Compute cumulative median, mean, and std dev for each algorithm and metric.
-    compute_descriptive_stats(df, metrics, output_dir)
+    summary_df = compute_descriptive_stats(df, metrics, output_dir)
+    # Validate no new NaNs introduced during computation.
     validator = DataValidator(
         required_columns=set(config["validation"]["required_columns"]),
         metric_columns=set(config["validation"]["metric_columns"]),
@@ -53,11 +56,15 @@ def main(df):
         }
     )
     validator._validate_no_new_nans(
-        df,
+        summary_df,
         reference_non_nulls=before_counts,
         context=f"descriptive stats for metrics {metrics}"
     )
-    logger.info("Descriptive statistics computed.")
+    # Validate with actual size before saving.
+    validate_output_path_for_df(output_dir, summary_df)
+    # Save descriptive statistics summary to CSV with user-friendly error handling.
+    save_analysis_results(summary_df.reset_index(), Path(f"{output_dir}/metrics_summary.csv"))
+    logger.info("Descriptive statistics summary saved.")
     # Histogram with KDE plots for each metric and algorithm.
     plot_distributions(df, metrics, output_dir)
     logger.info("Distribution plots created.")
