@@ -1,6 +1,3 @@
-from src.utils.io import save_csv
-
-import os
 import logging
 from pathlib import Path
 import pandas as pd     # type: ignore
@@ -9,27 +6,25 @@ import pandas as pd     # type: ignore
 logger = logging.getLogger(__name__)
 
 # Check measures of central tendency and dispersion for each algorithm.
-def compute_descriptive_stats(df: pd.DataFrame, metrics: list, output_dir: Path) -> None:
+def compute_descriptive_stats(df: pd.DataFrame, metrics: list, output_dir: Path) -> pd.DataFrame:
     """Compute median (what is typical) and standard deviation (consistency) per algorithm.
     Args:
         df (pd.DataFrame): DataFrame containing columns 'algorithm', 'f1_score', 'iou', 'mcc'.
         metrics (list): List of metric names to compute descriptive statistics for.
         output_dir (Path): Directory to save the summary CSV file.
     Returns:
-        None
+        pd.DataFrame: Summary DataFrame with median and std dev for each metric per algorithm.
     """
     logger.info("Computing descriptive statistics for each algorithm.")
     # Compute aggregated median and standard deviation for each metric per algorithm.
     for metric in metrics:
         if metric not in df.columns:
             logger.warning(f"Metric '{metric}' not found in DataFrame columns.")
-        summary = df.groupby('algorithm')[metric].agg(['median', 'std'])
+        summary = df.groupby('algorithm')[metric].agg(['median', 'mean', 'std'])
         logger.debug(f"Descriptive statistics for {metric}:\n{summary}")
     summary_df = pd.concat([df.groupby('algorithm')[metric]
-                            .agg(['median', 'std']) for metric in metrics], 
+                            .agg(['median', 'mean', 'std']) for metric in metrics], 
                             axis=1, keys=metrics)
     logger.info("Descriptive statistics computed successfully.")
     logger.debug(f"Summary DataFrame:\n{summary_df}")
-    # Save summary to CSV.
-    summary_path = os.path.join(output_dir, 'metrics_summary.csv')
-    save_csv(summary_df.reset_index(), Path(summary_path), timestamp=False)
+    return summary_df
