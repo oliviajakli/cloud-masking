@@ -2,6 +2,7 @@ from src.normality_check import compute_pairwise_differences, plot_normality, sh
 from src.utils.config import load_config
 from src.utils.logging import setup_logging
 from src.utils.validator import DataValidator
+from src.utils.io import save_analysis_results, validate_output_path_for_df
 
 from pathlib import Path
 import pandas as pd   # type: ignore
@@ -38,7 +39,13 @@ def main(df: pd.DataFrame) -> tuple[str, Path]:
     diff_hy_s2, diff_hy_cs, diff_s2_cs = compute_pairwise_differences(df, output_dir)
     # Test normality to determine appropriate statistical tests.
     logger.info("Performing Shapiro-Wilk tests for normality of pairwise differences.")
-    shapiro_wilk_test(pairs, diff_hy_s2, diff_hy_cs, diff_s2_cs, output_dir)
+    result_df = shapiro_wilk_test(pairs, diff_hy_s2, diff_hy_cs, diff_s2_cs, output_dir)
+    # Save normality test results as CSV.
+    output_path = Path(f"{output_dir}/shapiro_wilk.csv")
+    # Validate output path before saving.
+    validate_output_path_for_df(output_path, result_df)
+    # Save results with user-friendly error handling.
+    save_analysis_results(result_df, output_path)
     logger.info("Generating plots for normality of pairwise differences.")
     plot_normality(diff_hy_s2, diff_hy_cs, diff_s2_cs, output_dir)
     logger.info("Pairwise analysis completed.")
