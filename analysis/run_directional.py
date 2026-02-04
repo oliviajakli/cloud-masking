@@ -6,6 +6,7 @@ from src.directional_error import (
 from src.utils.config import load_config
 from src.utils.logging import setup_logging
 from src.utils.validator import DataValidator
+from src.utils.io import save_analysis_results, validate_output_path_for_df
 
 from pathlib import Path
 import pandas as pd   # type: ignore
@@ -42,8 +43,13 @@ def main(df: pd.DataFrame) -> tuple[str, Path]:
     df = compute_precision_recall_diff(df)
     logger.info("Computed precision-recall differences.")
     # Generate summary table and save to CSV.
-    summary_table(df)
-    logger.info("Generated summary table.")
+    summary_df = summary_table(df)
+    summary_path = Path(f"{output_dir}/directional_error_summary.csv")
+    # Validate output path before saving.
+    validate_output_path_for_df(summary_path, summary_df)
+    # Save results of summary table as CSV.
+    save_analysis_results(summary_df, summary_path)
+    logger.info(f"Generated and saved summary table to {summary_path}.")
     # Generate and save plots for directional bias.
     plot_directional_bias(df, output_dir)
     logger.info("Generated directional bias plots.")
