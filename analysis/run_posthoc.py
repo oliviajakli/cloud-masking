@@ -1,12 +1,13 @@
 from src.posthoc_tests import run_posthoc_wilcoxon, effect_size_cliffs_delta, bootstrap_cliffs_delta
 from src.utils.config import load_config
+from src.utils.io import save_analysis_results, validate_output_path_for_df
+from src.utils.logging import setup_logging
+from src.utils.validator import DataValidator
+
 from pathlib import Path
 import pandas as pd    # type: ignore
 import numpy as np   # type: ignore
 import logging
-from src.utils.io import save_csv
-from src.utils.logging import setup_logging
-from src.utils.validator import DataValidator
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +64,7 @@ def main(df: pd.DataFrame) -> str:
         on=['algorithm_a', 'algorithm_b']
     )
     logger.debug(f"Combined post-hoc results:\n{posthoc_df.head()}")
-    out_path = output_dir / "posthoc_cliffs_delta_results.csv"
+    out_path = Path(f"{output_dir}/posthoc_cliffs_delta_results.csv")
 
     # Calculate bootstrap 95% CIs for Cliff's Delta for each pair and save to dataframe.
     for (a, b) in pairs:
@@ -82,7 +83,10 @@ def main(df: pd.DataFrame) -> str:
             "ci_upper"
         ] = ci_upper
 
-    save_csv(posthoc_df, path=out_path)
+    # Validate output path and save results
+    validate_output_path_for_df(out_path, posthoc_df)
+    # Save results of post-hoc analysis to CSV.
+    save_analysis_results(posthoc_df, out_path)
     logger.info("Post-hoc analysis completed and results saved.")
     return f"Post-hoc results saved to {out_path}"
 
