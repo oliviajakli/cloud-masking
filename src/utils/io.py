@@ -82,7 +82,7 @@ def validate_output_path(filepath: Path, required_space_mb:float=100.0):
     
     # Warn if file already exists (optional - you might want to allow overwriting)
     if path.exists():
-        print(f"⚠ Warning: {filepath} already exists and will be overwritten.")
+        logger.warning(f"⚠ Warning: {filepath} already exists and will be overwritten.")
     
     return True
 
@@ -156,7 +156,7 @@ def save_analysis_results(df: pd.DataFrame, filepath: Path):
     ensure_dir(filepath.parent)
     try:
         df.to_csv(filepath, index=False)
-        print(f"✓ Results saved to {filepath}")
+        logger.info(f"✓ Results saved to {filepath}")
         
     except PermissionError:
         raise RuntimeError(
