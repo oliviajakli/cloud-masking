@@ -42,28 +42,27 @@ def compute_pairwise_differences(df: pd.DataFrame, output_dir: Path) -> tuple[pd
     logger.debug(f"Pairwise differences DataFrame:\n{diff_df}")
     return diff_hy_s2, diff_hy_cs, diff_s2_cs
 
-def shapiro_wilk_test(pairs: list, diff_pair1: pd.Series, diff_pair2: pd.Series, diff_pair3: pd.Series, output_dir: Path) -> None:
+def shapiro_wilk_test(pairs: list, diff_pair1: pd.Series, diff_pair2: pd.Series, diff_pair3: pd.Series, output_dir: Path) -> pd.DataFrame:
     """Test normality of pairwise differences in MCC using Shapiro–Wilk test.
     Args:
         pairs (list): List of algorithm pairs to compare.
         output_dir (Path): Directory to save output CSV files and figures.
     Returns:
-        None
+        pd.DataFrame: DataFrame with Shapiro-Wilk test results for each pair.
     """
     logger.info("Testing normality of pairwise differences in MCC using Shapiro–Wilk test.")
 
     # Shapiro–Wilk normality test for pairwise differences.
+    results = []
     for pair, diff in zip(pairs, [diff_pair1, diff_pair2, diff_pair3]):
         logger.info(f"Performing Shapiro–Wilk test for pair: {pair}")
         stat, p = shapiro(diff)
         logger.info(f"Shapiro–Wilk test for {pair}: statistic={stat}, p-value={p}")
-        # Create label from pair tuple/list.
-        label = f"{pair[0]} - {pair[1]}" if isinstance(pair, (list, tuple)) else pair
-        # Save normality test results as CSV.
-        output_path = output_dir / f"shapiro_wilk_{label.replace(' ', '_').replace('-', 'vs')}.csv"
-        result_df = pd.DataFrame({'algorithm_pair': [label], 'statistic': [stat], 'p_value': [p]})
-        save_csv(result_df, output_path)
-        logger.info(f"{label}: stat = {stat:.4f}, p = {p:.4f}")
+        logger.info(f"{pair}: stat = {stat:.4f}, p = {p:.4f}")
+        results.append({'algorithm_pair': pair, 'statistic': stat, 'p_value': p})
+    
+    result_df = pd.DataFrame(results)
+    return result_df
 
 
 def plot_normality(diff_pair1: pd.Series, diff_pair2: pd.Series, diff_pair3: pd.Series, output_dir: Path) -> None:
