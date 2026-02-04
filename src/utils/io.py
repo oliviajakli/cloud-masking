@@ -12,7 +12,7 @@ def ensure_dir(path: Path):
     path.mkdir(parents=True, exist_ok=True)
 
 # Save DataFrame to CSV with optional timestamp in filename.
-def save_csv(df: pd.DataFrame, path: Path, timestamp=True) -> None:
+def save_csv(df: pd.DataFrame, path: Path, timestamp=False) -> None:
     """Save DataFrame to CSV, optionally appending a timestamp to the filename.
     Args:
         df: DataFrame to save
@@ -144,6 +144,36 @@ def save_dataframe(df: pd.DataFrame, filepath: Path):
             f"Pipeline cannot continue. Error: {e}"
         ) from e
 
+# For user-facing analysis results.
+def save_analysis_results(df: pd.DataFrame, filepath: Path):
+    """Save analysis results DataFrame to CSV with user-friendly error handling.
+    Args:
+        df: DataFrame to save
+        filepath: Path to save CSV file
+    Raises:
+        RuntimeError: If saving fails due to permission or disk space issues.
+    """
+    ensure_dir(filepath.parent)
+    try:
+        df.to_csv(filepath, index=False)
+        print(f"✓ Results saved to {filepath}")
+        
+    except PermissionError:
+        raise RuntimeError(
+            f"Permission denied: Cannot write to {filepath}. "
+            f"Please check file permissions or choose a different location."
+        ) from None
+        
+    except OSError as e:
+        if e.errno == 28:  # ENOSPC - No space left on device
+            raise RuntimeError(
+                f"Disk full: Cannot save results to {filepath}. "
+                f"Please free up space or choose a different location."
+            ) from None
+        raise RuntimeError(
+            f"Failed to save results to {filepath}: {e}"
+        ) from e
+    
 # Check that file exists and is not empty, whether tif or csv.
 def check_file_nonempty(path: Path):
     if not path.exists():
