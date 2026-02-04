@@ -1,13 +1,13 @@
+from scipy.stats import wilcoxon    # type: ignore
+from src.utils.plotting import save_figure
+
+import os
+import logging
+from pathlib import Path
 import numpy as np  # type: ignore
 import pandas as pd     # type: ignore
 import matplotlib.pyplot as plt # type: ignore
 import seaborn as sns   # type: ignore
-import os
-import logging
-from pathlib import Path
-from scipy.stats import wilcoxon    # type: ignore
-from src.utils.plotting import save_figure
-from src.utils.io import save_csv
 
 logger = logging.getLogger(__name__)
 
@@ -96,10 +96,6 @@ def summary_table(df: pd.DataFrame) -> pd.DataFrame:
 
     summary_df = pd.DataFrame(summary_rows)
     logger.debug(f"Summary DataFrame:\n{summary_df}")
-    # Save summary table
-    summary_path = os.path.join("results", "directional_error_summary.csv")
-    save_csv(summary_df, Path(summary_path))
-    logger.info(f"Saved summary table to {summary_path}.")
     return summary_df
 
 def plot_directional_bias(df: pd.DataFrame, output_dir: Path) -> None:
