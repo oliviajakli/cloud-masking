@@ -16,29 +16,6 @@ from sklearn.metrics import (
 
 logger = logging.getLogger(__name__)
 
-def load_masks(folder_path: Path) -> list[np.ndarray]:
-    """Load all mask file paths from a given folder.
-    params:
-        folder_path: str, path to folder containing mask files
-    returns: list of numpy arrays
-    """
-    masks = []
-    # Must be sorted to ensure comparison with reference masks is correct.
-    for file in sorted(os.listdir(folder_path)):
-        logger.info(f"Loading mask file: {file}")
-        # Check that folder is not empty.
-        if len(file) == 0:
-            logger.warning(f"No files found in folder: {folder_path}")
-            raise FileNotFoundError(f"No files found in folder: {folder_path}")
-        # Only process .tif files.
-        if not file.lower().endswith('.tif'):
-            continue
-        with rasterio.open(os.path.join(folder_path, file)) as src:
-            mask = src.read()
-            logger.debug(f"Mask shape: {mask.shape}, dtype: {mask.dtype}")
-            masks.append(mask.flatten())    # 1D array shape for metric computations.
-            logger.info(f"Loaded mask shape: {mask.shape}")
-    return masks
 
 def compute_metrics(masks_dir: Path) -> pd.DataFrame:
     """Compute evaluation metrics for cloud masks in the given directory.
