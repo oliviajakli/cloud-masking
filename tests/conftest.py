@@ -21,3 +21,20 @@ def small_binary_raster(tmp_path):
         dst.write(data, 1)
 
     return path
+
+
+@pytest.fixture
+def write_raster():
+    def _write(arr, path):
+        with rasterio.open(
+            path,
+            "w",
+            driver="GTiff",
+            height=arr.shape[0],
+            width=arr.shape[1],
+            count=1,
+            dtype=arr.dtype,
+            transform=from_origin(0, 0, 1, 1),
+        ) as dst:
+            dst.write(arr, 1)
+    return _write
