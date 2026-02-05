@@ -1,7 +1,10 @@
 from pathlib import Path
+import os
 import tempfile
 import shutil
+import rasterio  # type: ignore
 import pandas as pd     # type: ignore
+import numpy as np    # type: ignore
 import logging
 from datetime import datetime
 
@@ -173,12 +176,32 @@ def save_analysis_results(df: pd.DataFrame, filepath: Path):
         raise RuntimeError(
             f"Failed to save results to {filepath}: {e}"
         ) from e
-    
-# Check that file exists and is not empty, whether tif or csv.
-def check_file_nonempty(path: Path):
-    if not path.exists():
-        logger.error(f"File not found: {path}")
-        raise FileNotFoundError(f"File not found: {path}")
-    if path.stat().st_size == 0:
-        logger.error(f"File is empty: {path}")
-        raise ValueError(f"File is empty: {path}")
+
+def load_masks(folder_path: Path) -> list[np.ndarray]:
+    """Load all mask file paths from a given folder.
+    params:
+        folder_path: str, path to folder containing mask files
+    returns: list of numpy arrays
+    """
+    masks = []
+    # Must be sorted to ensure comparison with reference masks is correct.
+    for file in sorted(os.listdir(folder_path)):
+        logger.info(f"Loading mask file: {file}")
+        # Check that folder is not empty.
+        if len(file) == 0:
+            logger.warning(f"No files found in folder: {folder_path}")
+            raise FileNotFoundError(f"No files found in folder: {folder_path}")
+        # Check that file is not empty.
+        path = os.path.join(folder_path, file)
+        if Path(path).stat().st_size == 0:
+            logger.error(f"File is empty: {path}")
+            raise ValueError(f"File is empty: {path}")
+        # Only process .tif files.
+        if not file.lower().endswith('.tif'):
+            continue
+        with rasterio.open(os.path.join(folder_path, file)) as src:
+            mask = src.read()
+            logger.debug(f"Mask shape: {mask.shape}, dtype: {mask.dtype}")
+            masks.append(mask.flatten())    # 1D array shape for metric computations.
+            logger.info(f"Loaded mask shape: {mask.shape}")
+    return masks
