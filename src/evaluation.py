@@ -19,9 +19,12 @@ logger = logging.getLogger(__name__)
 
 def compute_metrics(masks_dir: Path) -> pd.DataFrame:
     """Compute evaluation metrics for cloud masks in the given directory.
-    params:
+    Params:
         masks_dir: str, path to the directory containing 'reference' and algorithm subdirectories
-    returns: pd.DataFrame with computed metrics for each scene and algorithm
+    Returns: 
+        pd.DataFrame with computed metrics for each scene and algorithm
+    Raises:
+        FileNotFoundError: If required directories or files are missing
     """
     ref_dir = os.path.join(masks_dir, 'reference')
     # Ensure reference directory exists.
@@ -36,14 +39,18 @@ def compute_metrics(masks_dir: Path) -> pd.DataFrame:
     records = []  # Collect per-scene results.
     for alg in algorithms:
         alg_dir = os.path.join(masks_dir, alg)
+        # First, check if the algorithm directory exists and is not empty.
+        if not os.path.exists(alg_dir):
+            logger.warning(f"No algorithm folders found in masks directory: {masks_dir}")
+            raise FileNotFoundError(f"No algorithm folders found in masks directory: {masks_dir}")
+        if not os.listdir(alg_dir):
+            logger.warning(f"Algorithm folder is empty: {alg_dir}")
+            raise FileNotFoundError(f"Algorithm folder is empty: {alg_dir}")
         # Sort to ensure comparison with reference masks is correct.
         for file_name in sorted(os.listdir(alg_dir)):
-            if len(file_name) == 0:
-                logger.warning(f"No files found in algorithm folder: {alg_dir}")
-                raise FileNotFoundError(f"No files found in algorithm folder: {alg_dir}")
-            logger.info(f"Evaluating algorithm '{alg}' on file: {file_name}")
             if not file_name.lower().endswith('.tif'):
                 continue
+            logger.info(f"Evaluating algorithm '{alg}' on file: {file_name}")
 
             scene_id = os.path.splitext(file_name)[0]
             ref_path = os.path.join(ref_dir, f"{scene_id}.tif")
