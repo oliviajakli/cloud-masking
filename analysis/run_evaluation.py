@@ -1,6 +1,6 @@
-from src.evaluation import load_masks, compute_metrics, plot_confusion_matrix
+from src.evaluation import compute_metrics, plot_confusion_matrix
 from src.utils.config import load_config
-from src.utils.io import save_csv, save_dataframe, validate_output_path
+from src.utils.io import save_csv, save_dataframe, validate_output_path, load_masks
 from src.utils.logging import setup_logging
 from src.utils.validator import DataValidator    # type: ignore
 
