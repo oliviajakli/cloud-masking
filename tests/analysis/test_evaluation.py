@@ -1,10 +1,13 @@
-from src.evaluation import compute_metrics, plot_confusion_matrix
-import numpy as np
-import pytest
 from unittest.mock import patch
 
+import numpy as np
+import pytest
+
+from src.evaluation import compute_metrics, plot_confusion_matrix
+
+
 # Unit tests for compute_metrics.
-def test_compute_metrics_columns(tmp_path, small_binary_raster):
+def test_compute_metrics_columns(tmp_path, write_raster):
     masks_dir = tmp_path / "masks"
     ref_dir = masks_dir / "reference"
     alg_dir = masks_dir / "alg_a"
@@ -12,8 +15,9 @@ def test_compute_metrics_columns(tmp_path, small_binary_raster):
     ref_dir.mkdir(parents=True)
     alg_dir.mkdir(parents=True)
 
-    small_binary_raster.rename(ref_dir / "scene1.tif")
-    (ref_dir / "scene1.tif").replace(alg_dir / "scene1.tif")
+    data = np.array([[0, 1], [1, 0]], dtype=np.uint8)
+    write_raster(data, ref_dir / "scene1.tif")
+    write_raster(data, alg_dir / "scene1.tif")
 
     df = compute_metrics(masks_dir)
 
@@ -99,7 +103,7 @@ def test_plot_confusion_matrix_empty():
     with pytest.raises(ValueError):
         plot_confusion_matrix(cm, "Empty")
 
-@patch("src.analysis.evaluation.save_figure")
+@patch("src.evaluation.save_figure")
 def test_plot_confusion_matrix_saves(mock_save):
     cm = np.array([[5, 1], [2, 7]])
     plot_confusion_matrix(cm, "Test Matrix")
