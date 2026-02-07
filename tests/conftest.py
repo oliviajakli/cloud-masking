@@ -2,6 +2,17 @@ import numpy as np
 import rasterio
 from rasterio.transform import from_origin
 import pytest
+import pandas as pd     # type: ignore
+
+@pytest.fixture
+def sample_metrics_df():
+    return pd.DataFrame({
+        "scene_id": [1, 2, 3],
+        "algorithm": ["A", "B", "C"],
+        "mcc": [0.8, 0.7, 0.6],
+        "f1": [0.9, 0.85, 0.75],
+    })
+
 
 @pytest.fixture
 def small_binary_raster(tmp_path):
