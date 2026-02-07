@@ -9,8 +9,10 @@ def sample_metrics_df():
     return pd.DataFrame({
         "scene_id": [1, 2, 3],
         "algorithm": ["A", "B", "C"],
+        "f1_score": [0.9, 0.85, 0.75],
+        "iou": [0.5, 0.35, 0.63],
         "mcc": [0.8, 0.7, 0.6],
-        "f1": [0.9, 0.85, 0.75],
+        "cloud_fraction": [0.08, 0.98, 0.22]
     })
 
 
