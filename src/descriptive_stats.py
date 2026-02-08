@@ -1,30 +1,30 @@
 import logging
-from pathlib import Path
 import pandas as pd     # type: ignore
 
 
 logger = logging.getLogger(__name__)
 
 # Check measures of central tendency and dispersion for each algorithm.
-def compute_descriptive_stats(df: pd.DataFrame, metrics: list, output_dir: Path) -> pd.DataFrame:
-    """Compute median (what is typical) and standard deviation (consistency) per algorithm.
+
+def compute_descriptive_stats( df: pd.DataFrame, metrics: list[str]) -> pd.DataFrame:
+    """Core function to compute descriptive statistics for each algorithm.
     Args:
-        df (pd.DataFrame): DataFrame containing columns 'algorithm', 'f1_score', 'iou', 'mcc'.
-        metrics (list): List of metric names to compute descriptive statistics for.
-        output_dir (Path): Directory to save the summary CSV file.
+        df (pd.DataFrame): DataFrame containing columns 'algorithm' and specified metrics.
+        metrics (list[str]): List of metric names to compute descriptive statistics for.
     Returns:
         pd.DataFrame: Summary DataFrame with median and std dev for each metric per algorithm.
     """
-    logger.info("Computing descriptive statistics for each algorithm.")
-    # Compute aggregated median and standard deviation for each metric per algorithm.
-    for metric in metrics:
-        if metric not in df.columns:
-            logger.warning(f"Metric '{metric}' not found in DataFrame columns.")
-        summary = df.groupby('algorithm')[metric].agg(['median', 'mean', 'std'])
-        logger.debug(f"Descriptive statistics for {metric}:\n{summary}")
-    summary_df = pd.concat([df.groupby('algorithm')[metric]
-                            .agg(['median', 'mean', 'std']) for metric in metrics], 
-                            axis=1, keys=metrics)
-    logger.info("Descriptive statistics computed successfully.")
-    logger.debug(f"Summary DataFrame:\n{summary_df}")
-    return summary_df
+    rows = []
+    for algo, group in df.groupby("algorithm"):
+        for metric in metrics:
+            if metric not in group.columns:
+                raise ValueError(f"Metric '{metric}' not found")
+
+            rows.append({
+                "algorithm": algo,
+                "metric": metric,
+                "median": group[metric].median(),
+                "std": group[metric].std(),
+            })
+
+    return pd.DataFrame(rows)
