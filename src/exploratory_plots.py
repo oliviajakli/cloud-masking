@@ -29,7 +29,14 @@ def validate_metrics(df: pd.DataFrame, metrics: list):
     if missing:
         raise ValueError(f"Missing metrics: {missing}")
     
-def make_distribution_plot(df: pd.DataFrame, metric: list):
+def make_distribution_plot(df: pd.DataFrame, metric: str):
+    """Create a distribution plot for a given metric across algorithms.
+    Args:
+        df (pd.DataFrame): DataFrame containing metrics and algorithm labels.
+        metric (str): Metric column name to plot.
+    Returns:
+        tuple: (fig, ax) Matplotlib figure and axis objects.
+    """
     fig, ax = plt.subplots()
     sns.histplot(data=df, x=metric, hue="algorithm", kde=True, ax=ax)
     return fig, ax
@@ -263,6 +270,21 @@ def plot_bland_altman(df: pd.DataFrame, pairs: list, output_dir: Path) -> None:
         save_figure(plt.gcf(), Path(os.path.join(output_dir, file_name)))
         logger.info(f"Saved: {file_name}")
 
+def compute_error_map(reference: np.ndarray, predicted: np.ndarray) -> np.ndarray:
+    """Compute a per-pixel error map classifying pixels into TP, TN, FP, FN.
+    Args:
+        reference (np.ndarray): 2D array of reference mask (binary).
+        predicted (np.ndarray): 2D array of predicted mask (binary).
+    Returns:
+        np.ndarray: 2D array with values {0: BG, 1: TP, 2: TN, 3: FP, 4: FN}.
+    """
+    error_map = np.zeros_like(reference, dtype=np.uint8)
+    error_map[(reference == 1) & (predicted == 1)] = 1
+    error_map[(reference == 0) & (predicted == 0)] = 2
+    error_map[(reference == 0) & (predicted == 1)] = 3
+    error_map[(reference == 1) & (predicted == 0)] = 4
+    return error_map
+
 def plot_error_maps(algorithms: list, samples: list, reference_masks: Path, config: dict, output_dir: Path) -> None:
     """Generate per-pixel error maps for each algorithm and sample compared to reference masks.
     Args:
@@ -289,11 +311,7 @@ def plot_error_maps(algorithms: list, samples: list, reference_masks: Path, conf
 
         # Initialize error map and classify pixels into TP, TN, FP, FN.
         logger.debug("Classifying pixels into TP, TN, FP, FN.")
-        error_map = np.zeros_like(reference, dtype=np.uint8)
-        error_map[(reference == 1) & (predicted == 1)] = 1
-        error_map[(reference == 0) & (predicted == 0)] = 2
-        error_map[(reference == 0) & (predicted == 1)] = 3
-        error_map[(reference == 1) & (predicted == 0)] = 4
+        error_map = compute_error_map(reference, predicted)
         logger.debug(f"Error map unique values: {np.unique(error_map)}")
 
         colors = ["black", "lime", "gray", "red", "orange"]  # BG, TP, TN, FP, FN
@@ -367,6 +385,7 @@ def plot_time_series(df: pd.DataFrame, metrics: list, output_dir: Path) -> None:
     """
     logger.info("Plotting time series of metrics over time.")
     sns.set_theme(style="whitegrid", font_scale=1)
+    df = df.copy()
     # Replace 'date' with the actual column name if different (e.g., 'acquisition_date')
     df["date"] = df["scene_id"].astype(str).str.extract(r"(\d{6})")
     df["date"] = pd.to_datetime(df["date"], format="%Y%m")
