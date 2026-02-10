@@ -16,47 +16,37 @@ from statannotations.Annotator import Annotator # type: ignore
 
 logger = logging.getLogger(__name__)
 
-def plot_distributions(df: pd.DataFrame, metrics: list, output_dir: Path) -> None:
-    """ Check data distribution by plotting histograms and KDEs for each metric, by algorithm.
+    
+def validate_metrics(df: pd.DataFrame, metrics: list):
+    """Raise an error if a metric or metrics are missing.
     Args:
         df (pd.DataFrame): DataFrame containing metrics and algorithm labels.
         metrics (list): List of metric column names to plot.
-        output_dir (Path): Directory to save the plots.
-    Returns:
-        None
+    Raises:
+        ValueError: If metrics are missing
     """
+    missing = [m for m in metrics if m not in df.columns]
+    if missing:
+        raise ValueError(f"Missing metrics: {missing}")
+    
+def make_distribution_plot(df: pd.DataFrame, metric: list):
+    fig, ax = plt.subplots()
+    sns.histplot(data=df, x=metric, hue="algorithm", kde=True, ax=ax)
+    return fig, ax
+
+def plot_distributions(df: pd.DataFrame, metrics: list, output_dir: Path):
+    validate_metrics(df, metrics)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
     for metric in metrics:
         logger.info(f"Plotting distribution for metric: {metric}")
-        sns.set_theme(style="whitegrid", font_scale=1)
-        plt.figure(figsize=(7, 5))
-
-        sns.histplot(
-            data=df,
-            x=metric,
-            hue='algorithm',
-            bins=15,
-            stat='density',
-            element='step',
-            common_norm=False,
-            alpha=0.3
-        )
-        # Kernel Density Estimate overlay for a comprehensive view of distribution.
-        sns.kdeplot(
-            data=df,
-            x=metric,
-            hue='algorithm',
-            common_norm=False,
-            linewidth=2
-        )
-
+        fig, ax = make_distribution_plot(df, metric)
         fig_path = os.path.join(output_dir, f'histogram_kde_{metric}.png')
 
-        plt.title(f'Distribution of {metric.replace("_", " ").title()} (Histogram + KDE)')
-        plt.xlabel(metric.replace("_", " ").title())
-        plt.ylabel('Density')
         logger.info(f"Saving distribution plot for {metric} to {fig_path}")
         logger.debug(f"Distribution plot data:\n{df[[metric, 'algorithm']].head()}")
-        save_figure(plt.gcf(), Path(fig_path))
+        save_figure(fig, output_dir / f"{metric}_distribution.png")
+
 
 def plot_boxplots_with_stats(df: pd.DataFrame, metrics: list, pairs: list, algorithms: list, output_dir: Path) -> None:
     """Plot boxplots for each metric across algorithms with statistical annotations.
