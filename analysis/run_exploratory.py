@@ -41,7 +41,7 @@ def main(df):
         col: df[col].notna().sum() for col in [metrics]
     }
     # Compute cumulative median, mean, and std dev for each algorithm and metric.
-    summary_df = compute_descriptive_stats(df, metrics, output_dir)
+    summary_df = compute_descriptive_stats(df, metrics)
     # Validate no new NaNs introduced during computation.
     validator = DataValidator(
         required_columns=set(config["validation"]["required_columns"]),
