@@ -25,11 +25,15 @@ def compute_pairwise_differences(df: pd.DataFrame, output_dir: Path) -> tuple[pd
     # Pivot to wide format (scenes x algorithms). Algorithms will be in alphabetical order.
     mcc_wide = df.pivot(index='scene_id', columns='algorithm', values='mcc')
     logger.debug(f"MCC wide format DataFrame:\n{mcc_wide}")
-    # Compute pairwise differences. Cloud Score+ is at index 0.
-    # Hybrid method is at index 1. s2cloudless at index 2.
-    diff_hy_s2 = mcc_wide.iloc[:, 1] - mcc_wide.iloc[:, 2]
-    diff_hy_cs = mcc_wide.iloc[:, 1] - mcc_wide.iloc[:, 0]
-    diff_s2_cs = mcc_wide.iloc[:, 2] - mcc_wide.iloc[:, 0]
+
+    required = {"hybrid", "s2cloudless", "cloudscoreplus"}
+    if not required.issubset(mcc_wide.columns):
+        raise ValueError(f"Missing algorithms: {required - set(mcc_wide.columns)}")
+
+    diff_hy_s2 = mcc_wide["hybrid"] - mcc_wide["s2cloudless"]
+    diff_hy_cs = mcc_wide["hybrid"] - mcc_wide["cloudscoreplus"]
+    diff_s2_cs = mcc_wide["s2cloudless"] - mcc_wide["cloudscoreplus"]
+
     # Save differences to output directory.
     output_path = output_dir / "pairwise_mcc_differences.csv"
     diff_df = pd.DataFrame({
@@ -43,7 +47,7 @@ def compute_pairwise_differences(df: pd.DataFrame, output_dir: Path) -> tuple[pd
     logger.debug(f"Pairwise differences DataFrame:\n{diff_df}")
     return diff_hy_s2, diff_hy_cs, diff_s2_cs
 
-def shapiro_wilk_test(pairs: list, diff_pair1: pd.Series, diff_pair2: pd.Series, diff_pair3: pd.Series, output_dir: Path) -> pd.DataFrame:
+def shapiro_wilk_test(pairs: list, diff_pair1: pd.Series, diff_pair2: pd.Series, diff_pair3: pd.Series) -> pd.DataFrame:
     """Test normality of pairwise differences in MCC using Shapiro–Wilk test.
     Args:
         pairs (list): List of algorithm pairs to compare.
@@ -52,6 +56,8 @@ def shapiro_wilk_test(pairs: list, diff_pair1: pd.Series, diff_pair2: pd.Series,
         pd.DataFrame: DataFrame with Shapiro-Wilk test results for each pair.
     """
     logger.info("Testing normality of pairwise differences in MCC using Shapiro–Wilk test.")
+    if len(pairs) != 3:
+        raise ValueError("Exactly three algorithm pairs are required")
 
     # Shapiro–Wilk normality test for pairwise differences.
     results = []
