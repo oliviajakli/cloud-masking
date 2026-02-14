@@ -20,14 +20,7 @@ def run_posthoc_wilcoxon(df: pd.DataFrame, pairs: list) -> pd.DataFrame:
     pvals = []
     for (a, b) in pairs:
         logger.debug(f"Comparing {a} and {b}.")
-        if len(df[a]) != len(df[b]):
-            raise ValueError("Algorithms must have equal number of observations.")
-        if np.all(df[a] - df[b] == 0):
-            raise ValueError("All paired differences are zero.")
-        if len(df[a]) < 2:
-            raise ValueError("At least two paired observations required.")
-
-        stat, p = wilcoxon(df[a], df[b], zero_method="wilcox", alternative="two-sided")
+        stat, p = wilcoxon(df[a], df[b])
         pvals.append(p)
         logger.info(f"{a} vs {b}: Statistic = {stat}, uncorrected p-value = {p:.4f}")
 
@@ -63,11 +56,6 @@ def effect_size_cliffs_delta(df: pd.DataFrame, pairs: list) -> list:
     results = []
     for (a, b) in pairs:
         logger.debug(f"Calculating Cliff's Delta for {a} and {b}.")
-        if len(df[a]) != len(df[b]):
-            raise ValueError("Algorithms must have equal number of observations.")
-        if len(df[a]) < 2:
-            raise ValueError("At least two paired observations required.")
-
         delta, magnitude = cliffs_delta(df[a], df[b])
         results.append({
             "algorithm_a": a,
@@ -80,7 +68,7 @@ def effect_size_cliffs_delta(df: pd.DataFrame, pairs: list) -> list:
     logger.info("Cliff's Delta calculations completed.")
     return results
 
-def bootstrap_cliffs_delta(x: pd.Series, y: pd.Series, n_boot: int = 5000, ci: int = 95, random_state=None) -> tuple:
+def bootstrap_cliffs_delta(x: pd.Series, y: pd.Series, n_boot: int = 5000, ci: int = 95) -> tuple:
     """
     Calculate Cliff's Delta for all pairwise comparisons among algorithms,
     bootstrap CI, and full distribution. x, y should be 1D numpy arrays of
@@ -93,11 +81,7 @@ def bootstrap_cliffs_delta(x: pd.Series, y: pd.Series, n_boot: int = 5000, ci: i
     Returns:
         tuple: Lower and upper bounds of the confidence interval.
     """
-    rng = np.random.default_rng(random_state)   
     logger.info("Calculating bootstrap CI for Cliff's Delta between two algorithms.")
-    if len(x) != len(y):
-        raise ValueError("x and y must have equal length.")
-
     boot_deltas = []
     n = len(x)
 
@@ -106,7 +90,7 @@ def bootstrap_cliffs_delta(x: pd.Series, y: pd.Series, n_boot: int = 5000, ci: i
     y_np = y.values
 
     for _ in range(n_boot):
-        indices = rng.choice(n, n, replace=True)
+        indices = np.random.choice(n, n, replace=True)
         x_boot = x_np[indices]
         y_boot = y_np[indices]
         delta, _ = cliffs_delta(x_boot, y_boot)
