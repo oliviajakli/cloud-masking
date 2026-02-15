@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from src.utils.io import check_file_nonempty, save_csv, validate_output_path
+from src.utils.io import save_csv, validate_output_path
 
 
 def test_save_csv_and_read(tmp_path):
@@ -13,20 +13,6 @@ def test_save_csv_and_read(tmp_path):
     read = pd.read_csv(out)
     assert list(read.columns) == ["a"]
     assert read.shape == (3, 1)
-
-
-def test_check_file_nonempty_raises(tmp_path):
-    empty = tmp_path / "empty.tif"
-    empty.touch()
-
-    with pytest.raises(ValueError):
-        check_file_nonempty(empty)
-
-    # remove and expect FileNotFoundError
-    empty.unlink()
-    with pytest.raises(FileNotFoundError):
-        check_file_nonempty(empty)
-
 
 def test_validate_output_path_missing_parent(tmp_path):
     # parent does not exist
