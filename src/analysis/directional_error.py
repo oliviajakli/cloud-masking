@@ -1,0 +1,154 @@
+import logging
+import os
+from pathlib import Path
+from typing import Any
+
+import matplotlib.pyplot as plt  # type: ignore
+import numpy as np  # type: ignore
+import pandas as pd  # type: ignore
+import seaborn as sns  # type: ignore
+from scipy.stats import wilcoxon  # type: ignore
+
+from src.utils.plotting import save_figure
+
+logger = logging.getLogger(__name__)
+
+def compute_precision_recall_diff(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Adds a column: pr_diff = precision - recall.
+    Small floating-point artifacts are rounded for stable downstream comparisons.
+    Args:
+        df (pd.DataFrame): DataFrame with 'precision' and 'recall' columns.
+    Returns:
+        pd.DataFrame: DataFrame with added 'pr_diff' column.
+    """
+    logger.info("Computing precision-recall differences.")
+    df = df.copy()
+    df["pr_diff"] = (df["precision"] - df["recall"]).round(10)
+    logger.debug(f"Computed pr_diff for {len(df)} records.")
+    return df
+
+def bootstrap_median_ci(
+        x: np.ndarray, 
+        n_boot: int = 5000, 
+        ci: int = 95, 
+        random_state: int = 42) -> tuple[Any, Any, Any]:
+    """Computes bootstrap confidence interval for the median of x.
+    Args:
+        x (np.ndarray): Input data array.
+        n_boot (int): Number of bootstrap samples.
+        ci (int): Confidence interval percentage.
+        random_state (int): Random seed for reproducibility.
+    Returns:
+        tuple[float, float, float]: Median, lower CI bound, upper CI bound.
+    """
+    logger.info("Computing bootstrap median and confidence interval.")
+    rng = np.random.default_rng(random_state)
+    x = np.asarray(x)
+    x = x[~np.isnan(x)]
+    if len(x) == 0:
+        return np.nan, np.nan, np.nan
+
+    boot_medians = [
+        np.median(rng.choice(x, size=len(x), replace=True))
+        for _ in range(n_boot)
+    ]
+
+    alpha = (100 - ci) / 2
+    lower = np.percentile(boot_medians, alpha)
+    upper = np.percentile(boot_medians, 100 - alpha)
+    logger.debug(f"Bootstrap median: {np.median(x)}, CI: ({lower}, {upper})")
+    return np.median(x), lower, upper
+
+def wilcoxon_vs_zero(x: np.ndarray) -> Any:
+    """Performs Wilcoxon signed-rank test against zero.
+    Args:
+        x (np.ndarray): Input data array.
+    Returns:
+        float: p-value from the Wilcoxon test.
+    """
+    logger.info("Performing Wilcoxon signed-rank test against zero.")
+    x = np.asarray(x)
+    x = x[~np.isnan(x)]
+
+    # If all values are zero, return NaN p-value.
+    if np.allclose(x, 0):
+        return np.nan
+    if len(x) < 2:
+        raise ValueError("At least two non-NaN values are required for Wilcoxon test.")
+
+    stat, p = wilcoxon(x, zero_method="wilcox", alternative="two-sided")
+    logger.debug(f"Wilcoxon test statistic: {stat}, p-value: {p}")
+    return p
+
+def summary_table(df: pd.DataFrame, ci: int = 95) -> pd.DataFrame:
+    """Computes summary statistics for each algorithm in the dataframe.
+    Args:
+        df (pd.DataFrame): Input dataframe with 'pr_diff' column.
+        ci (int): Confidence interval percentage.
+    Returns:
+        pd.DataFrame: Summary statistics dataframe.
+    """
+    logger.info("Generating summary table for directional error analysis.")
+    required = {"algorithm", "pr_diff"}
+    missing = required - set(df.columns)
+    if missing:
+        raise ValueError(f"Missing required columns: {missing}")
+
+    summary_rows = []
+
+    for algo, g in df.groupby("algorithm"):
+        median, ci_lo, ci_hi = bootstrap_median_ci(g["pr_diff"].to_numpy())
+        p_value = wilcoxon_vs_zero(g["pr_diff"].to_numpy())
+        logger.debug(f"Algorithm: {algo}, Median: {median}, CI: ({ci_lo}, {ci_hi}), Wilcoxon p-value: {p_value}")
+
+        summary_rows.append({
+            "algorithm": algo,
+            "median_pr_diff": median,
+            "ci_lower": ci_lo,
+            "ci_upper": ci_hi,
+            "wilcoxon_p": p_value,
+            "pct_commission": np.mean(g["pr_diff"] > 0) * 100
+        })
+
+    summary_df = pd.DataFrame(summary_rows)
+    logger.debug(f"Summary DataFrame:\n{summary_df}")
+    return summary_df
+
+def plot_directional_bias(df: pd.DataFrame, output_dir: Path) -> None:
+    """Generates and saves a violin plot of precision-recall differences.
+    Args:
+        df (pd.DataFrame): Input dataframe with 'pr_diff' column.
+        output_dir (Path): Directory to save the plot.
+    Returns:
+        None
+    """
+    logger.info("Generating directional bias violin plot.")
+    plt.figure(figsize=(9, 5))
+
+    sns.violinplot(
+        data=df,
+        x="algorithm",
+        y="pr_diff",
+        inner=None,
+        cut=0
+    )
+
+    # Overlay strip plot for individual points/samples.
+    sns.stripplot(
+        data=df,
+        x="algorithm",
+        y="pr_diff",
+        color="black",
+        alpha=0.6,
+        jitter=True
+    )
+
+    plt.axhline(0, color="red", linestyle="--", linewidth=1)
+
+    plt.ylabel("Precision − Recall")
+    plt.title("Commission vs. Omission Bias per Algorithm")
+
+    fig_path = os.path.join(output_dir, "directional_bias_violinplot.png")
+    save_figure(plt.gcf(), Path(fig_path))
+    logger.info(f"Saved directional bias plot to {fig_path}.")
