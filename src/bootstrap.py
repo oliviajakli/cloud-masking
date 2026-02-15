@@ -1,12 +1,13 @@
-import os
-from pathlib import Path
-import numpy as np  # type: ignore
-import pandas as pd     # type: ignore
-import rasterio  # type: ignore
-from glob import glob
-from sklearn.metrics import matthews_corrcoef   # type: ignore
-from tqdm import tqdm   # type: ignore
 import logging
+import os
+from glob import glob
+from pathlib import Path
+
+import numpy as np  # type: ignore
+import pandas as pd  # type: ignore
+import rasterio  # type: ignore
+from sklearn.metrics import matthews_corrcoef  # type: ignore
+from tqdm import tqdm  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,9 @@ def tile_array(arr: np.ndarray, tile_h: int, tile_w: int) -> list[np.ndarray]:
         list[np.ndarray]: List of 2D tiles.
     """
     logger.debug(f"Tiling array of shape {arr.shape} into tiles of size ({tile_h}, {tile_w}).")
+    if arr.ndim != 2:
+        raise ValueError("Input array must be 2D.")
+    
     H, W = arr.shape
     tiles = []
     for i in range(0, H, tile_h):
@@ -101,11 +105,15 @@ def mcc_per_tile(gt_arr: np.ndarray, pred_arr: np.ndarray, tile: int = 256) -> n
     logger.debug(f"MCC per tile computed: {mccs}")
     return np.array(mccs)
 
-def bootstrap_scene_tiles(mcc_tiles: np.ndarray, B: int = 1000) -> np.ndarray:
+def bootstrap_scene_tiles(
+    mcc_tiles: np.ndarray,
+    B: int = 1000,
+    rng: np.random.Generator | None = None) -> np.ndarray:
     """Bootstrap median MCC from tile-level MCCs for a single scene.
     Args:
         mcc_tiles (np.ndarray): Array of MCC values per tile for a scene.
         B (int): Number of bootstrap samples.
+        rng (np.random.Generator | None): Random generator for reproducible sampling.
     Returns:
         np.ndarray: Array of bootstrapped median MCC values.
     """
@@ -115,13 +123,18 @@ def bootstrap_scene_tiles(mcc_tiles: np.ndarray, B: int = 1000) -> np.ndarray:
         return np.full(B, np.nan)
     n = len(vals)
     boots = []
+    choice_fn = rng.choice if rng is not None else np.random.choice
     for _ in range(B):
-        sample = np.random.choice(vals, size=n, replace=True)
+        sample = choice_fn(vals, size=n, replace=True)
         boots.append(np.median(sample))
     logger.debug(f"Bootstrapped median MCCs: {boots}")
     return np.array(boots)
 
-def compute_tile_mccs_all(gt_folder: Path, alg_folder: Path, scenes: list[str], tile: int = 256) -> dict[str, dict[str, np.ndarray]]:
+def compute_tile_mccs_all(
+        gt_folder: Path, 
+        alg_folder: Path, 
+        scenes: list[str], 
+        tile: int = 256):
     """Compute tile-level MCCs for all algorithms and scenes.
     Args:
         gt_folder (Path): Path to ground truth folder.
@@ -142,7 +155,11 @@ def compute_tile_mccs_all(gt_folder: Path, alg_folder: Path, scenes: list[str], 
     logger.info(f"Completed computing tile-level MCCs for {alg_folder}.")
     return result
 
-def two_level_bootstrap(scene_tile_mccs: dict[str, dict[str, np.ndarray]], B_scene: int = 1000, B_global: int = 2000, seed: int = 0) -> tuple[pd.DataFrame, pd.DataFrame]:
+def two_level_bootstrap(
+        scene_tile_mccs: dict[str, dict[str, np.ndarray]], 
+        B_scene: int = 1000, 
+        B_global: int = 2000, 
+        seed: int = 0) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Perform two-level bootstrap to compute global metrics and paired differences.
     Args:
         scene_tile_mccs (dict[str, dict[str, np.ndarray]]): Nested dictionary of MCC arrays per scene per algorithm.
@@ -153,7 +170,7 @@ def two_level_bootstrap(scene_tile_mccs: dict[str, dict[str, np.ndarray]], B_sce
         tuple[pd.DataFrame, pd.DataFrame]: DataFrames of bootstrapped global metrics and paired differences.
     """
     logger.info("Starting two-level bootstrap analysis.")
-    np.random.seed(seed)
+    rng = np.random.default_rng(seed)
     algs = list(scene_tile_mccs.keys())
     scenes = sorted(scene_tile_mccs[algs[0]].keys())
     logger.debug(f"Algorithms: {algs}, Scenes: {scenes}")
@@ -162,15 +179,24 @@ def two_level_bootstrap(scene_tile_mccs: dict[str, dict[str, np.ndarray]], B_sce
     # Per-scene bootstrap for each algorithm (inner layer).
     scene_boots: dict[str, dict[str, np.ndarray]] = {alg: {} for alg in algs}
     for alg in algs:
+        if set(scene_tile_mccs[alg].keys()) != set(scenes):
+            raise ValueError("All algorithms must have identical scene sets.")
+        if S == 0:
+            raise ValueError("No scenes provided.")
+
         for s in scenes:
-            scene_boots[alg][s] = bootstrap_scene_tiles(scene_tile_mccs[alg][s], B=B_scene)
+            scene_boots[alg][s] = bootstrap_scene_tiles(
+                scene_tile_mccs[alg][s],
+                B=B_scene,
+                rng=rng,
+            )
 
     # Global paired bootstrap (outer layer, drives inferential results).
     alg_global = {alg: np.zeros(B_global) for alg in algs}
     for b in tqdm(range(B_global), desc="Global bootstrap"):
-        idxs = np.random.randint(0, S, size=S)
+        idxs = rng.integers(0, S, size=S)
         for alg in algs:
-            vals = [scene_boots[alg][scenes[i]][np.random.randint(0, B_scene)] for i in idxs]
+            vals = [scene_boots[alg][scenes[i]][rng.integers(0, B_scene)] for i in idxs]
             alg_global[alg][b] = np.nanmedian(vals)
     logger.info("Completed two-level bootstrap analysis.")
 
