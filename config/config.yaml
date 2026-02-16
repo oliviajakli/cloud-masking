@@ -35,3 +35,15 @@ algorithm_pairs:
 statistics:
   alpha: 0.05
   random_seed: 42
+
+validation:
+  required_columns:
+    - scene_id
+    - algorithm
+  metric_columns:
+    - precision
+    - recall
+    - f1_score
+    - iou
+    - mcc
+    - cloud_fraction
