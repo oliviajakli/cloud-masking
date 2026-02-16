@@ -10,32 +10,19 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Load and validate configuration
-try:
-    config = load_config()
-except FileNotFoundError as e:
-    raise SystemExit(f"Configuration file not found: {e}")
-except Exception as e:
-    raise SystemExit(f"Failed to load configuration: {e}")
 
-try:
-    input_data = Path(config["paths"]["input"])
-    pairs = config["algorithm_pairs"]
-    output_dir = Path(config["paths"]["output_dir"])
-except KeyError as e:
-    raise SystemExit(f"Missing required configuration key: {e}")
-
-def main(df: pd.DataFrame) -> tuple[str, Path]:
+def main(df: pd.DataFrame, output_dir: Path) -> tuple[str, Path]:
     """Run Friedman test on algorithm results.
     Args:
         df (pd.DataFrame): DataFrame with algorithm results.
+        output_dir (Path): Directory to save results.
     Returns:
         str: Message indicating where results are saved.
     """
     setup_logging()
     logger.info("Starting Friedman test analysis.")
     # Set output path for results.
-    output_path = Path(f"{output_dir}/friedman_test_results.csv")
+    output_path = output_dir / "friedman_test_results.csv"
     # Run Friedman test.
     result_df = run_friedman_test(df)
     # Validate output path before saving.
@@ -45,13 +32,37 @@ def main(df: pd.DataFrame) -> tuple[str, Path]:
     logger.info("Friedman test analysis completed.")
     return "Friedman test completed. Results saved to:", output_dir
 
-if __name__ == "__main__":
+def cli():
+    setup_logging()
+
+    # Load and validate configuration
+    try:
+        config = load_config()
+    except FileNotFoundError as e:
+        raise SystemExit(f"Configuration file not found: {e}")
+    except Exception as e:
+        raise SystemExit(f"Failed to load configuration: {e}")
+
+    try:
+        input_data = Path(config["paths"]["input"])
+        pairs = config["algorithm_pairs"]
+        output_dir = Path(config["paths"]["output_dir"])
+    except KeyError as e:
+        raise SystemExit(f"Missing required configuration key: {e}")
+
     df = pd.read_csv(input_data)
+
     validator = DataValidator(
         required_columns=set(config["validation"]["required_columns"]),
         metric_columns=set(config["validation"]["metric_columns"]),
         expected_algorithms=set(pairs.keys())
     )
+
     validator.validate_light(df, context="Friedman test analysis")
-    message, path = main(df)
+
+    message, path = main(df, output_dir)
     print(message, path)
+
+
+if __name__ == "__main__":
+    cli()
