@@ -15,25 +15,12 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Load and validate configuration
-try:
-    config = load_config()
-except FileNotFoundError as e:
-    raise SystemExit(f"Configuration file not found: {e}")
-except Exception as e:
-    raise SystemExit(f"Failed to load configuration: {e}")
 
-try:
-    input_data = Path(config["paths"]["input"])
-    output_dir = Path(config["paths"]["output_dir"])
-except KeyError as e:
-    raise SystemExit(f"Missing required configuration key: {e}")
-
-
-def main(df: pd.DataFrame) -> tuple[str, Path]:
+def main(df: pd.DataFrame, output_dir: Path) -> tuple[str, Path]:
     """Main function to run directional error analysis.
     Args:
         df (pd.DataFrame): Input dataframe with precision and recall data.
+        output_dir (Path): Directory to save results.
     Returns:
         tuple[str, Path]: Message and path to output directory.
     """
@@ -55,7 +42,21 @@ def main(df: pd.DataFrame) -> tuple[str, Path]:
     logger.info("Generated directional bias plots.")
     return "Directional analysis completed. Results saved to:", output_dir
 
-if __name__ == "__main__":
+def cli():
+    # Load and validate configuration
+    try:
+        config = load_config()
+    except FileNotFoundError as e:
+        raise SystemExit(f"Configuration file not found: {e}")
+    except Exception as e:
+        raise SystemExit(f"Failed to load configuration: {e}")
+
+    try:
+        input_data = Path(config["paths"]["input"])
+        output_dir = Path(config["paths"]["output_dir"])
+    except KeyError as e:
+        raise SystemExit(f"Missing required configuration key: {e}")
+
     df = pd.read_csv(input_data)
     validator = DataValidator(
         required_columns=set(config["validation"]["required_columns"]),
@@ -63,8 +64,8 @@ if __name__ == "__main__":
         expected_algorithms=set(config["algorithm_pairs"].keys())
     )
     validator.validate_light(df, context="directional analysis")
-    message, path = main(df)
+    message, path = main(df, output_dir)
     print(message, path)
 
-
-
+if __name__ == "__main__":
+    cli()
