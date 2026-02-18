@@ -3,10 +3,8 @@ paths:
   output_dir: results
   figures_dir: results/figures
   data_root: data
+  masks_dir: data/masks
   reference_masks_dir: data/masks/reference
-  cloudscoreplus_masks_dir: data/masks/cloudscoreplus
-  hybrid_masks_dir: data/masks/hybrid
-  s2cloudless_masks_dir: data/masks/s2cloudless
   reference_samples_dir: data/samples/reference
   cloudscoreplus_samples_dir: data/samples/cloudscoreplus
   hybrid_samples_dir: data/samples/hybrid
