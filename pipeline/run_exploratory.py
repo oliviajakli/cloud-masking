@@ -1,3 +1,7 @@
+from pathlib import Path
+import logging
+import pandas as pd # type: ignore
+
 from src.descriptive_stats import compute_descriptive_stats
 from src.exploratory_plots import (plot_distributions, plot_boxplots_with_stats,
     plot_paired_differences, plot_bland_altman, plot_error_maps,plot_scatterplot, 
@@ -7,59 +11,36 @@ from src.utils.config import load_config
 from src.utils.io import save_analysis_results, validate_output_path_for_df
 from src.utils.logging import setup_logging   # type: ignore
 
-from pathlib import Path
-import logging
-import pandas as pd # type: ignore
-
 
 logger = logging.getLogger(__name__)
 
-# Load and validate configuration
-try:
-    config = load_config()
-except FileNotFoundError as e:
-    raise SystemExit(f"Configuration file not found: {e}")
-except Exception as e:
-    raise SystemExit(f"Failed to load configuration: {e}")
 
-try:
-    input_data = Path(config["paths"]["input"])
-    metrics = config["metrics"]
-    pairs = config["algorithm_pairs"]
-    algorithms = config["algorithms"]
-    samples = config["samples"]
-    reference_masks = Path(config["paths"]["reference_masks_dir"])
-    output_dir = Path(config["paths"]["output_dir"])
-except KeyError as e:
-    raise SystemExit(f"Missing required configuration key: {e}")
-
-def main(df):
-    setup_logging()
+def run(
+        df: pd.DataFrame, 
+        metrics: list[str], 
+        pairs: list[tuple[str, str]],
+        algorithms: list[str],
+        samples: list[str],
+        reference_masks_dir: Path,
+        config: dict,
+        output_dir: Path) -> tuple[str, Path]:
+    """Run exploratory analysis and plotting.
+    Args:
+        df (pd.DataFrame): Input dataframe with evaluation metrics.
+        metrics (list[str]): List of metric column names to analyze.
+        pairs (list[tuple[str, str]]): List of algorithm pairs for comparison.
+        algorithms (list[str]): List of algorithm names.
+        samples (list[str]): List of sample identifiers.
+        reference_masks_dir (Path): Directory containing reference masks for error maps.
+        config (dict): Configuration dictionary with additional parameters.
+        output_dir (Path): Directory to save results.
+    Returns:
+        tuple[str, Path]: Message and path to output directory.
+    """
     logger.info("Starting descriptive analysis and plotting...")
     logger.debug(f"Input DataFrame head:\n{df.head()}")
-    before_counts = {
-        col: df[col].notna().sum() for col in [metrics]
-    }
     # Compute cumulative median, mean, and std dev for each algorithm and metric.
     summary_df = compute_descriptive_stats(df, metrics)
-    # Validate no new NaNs introduced during computation.
-    validator = DataValidator(
-        required_columns=set(config["validation"]["required_columns"]),
-        metric_columns=set(config["validation"]["metric_columns"]),
-        expected_algorithms=set(config["algorithms"]),
-        value_constraints={
-            "f1_score": lambda s: s.between(0, 1),
-            "precision": lambda s: s.between(0, 1),
-            "recall": lambda s: s.between(0, 1),
-            "iou": lambda s: s.between(0, 1),
-            "mcc": lambda s: s.between(-1, 1)
-        }
-    )
-    validator._validate_no_new_nans(
-        summary_df,
-        reference_non_nulls=before_counts,
-        context=f"descriptive stats for metrics {metrics}"
-    )
     # Validate with actual size before saving.
     validate_output_path_for_df(output_dir, summary_df)
     # Save descriptive statistics summary to CSV with user-friendly error handling.
@@ -78,7 +59,7 @@ def main(df):
     plot_bland_altman(df, pairs, Path(f"{output_dir}/bland_altman"))
     logger.info("Bland-Altman plots created.")
     # Per-pixel error maps for visualizing spatial error distributions.
-    plot_error_maps(algorithms, samples, reference_masks, config, Path(f"{output_dir}/error_maps"))
+    plot_error_maps(algorithms, samples, reference_masks_dir, config, Path(f"{output_dir}/error_maps"))
     logger.info("Per-pixel error maps created.")
     # Scatterplots for metric relationships.
     plot_scatterplot(df, metrics, Path(f"{output_dir}/scatterplots"))
@@ -87,15 +68,43 @@ def main(df):
     plot_time_series(df, metrics, Path(f"{output_dir}/time_series"))
     logger.info("Time series plots created.")
     logger.info("Descriptive analysis and plotting completed.")
-    return "Descriptive analysis and plots completed. Results saved to:", output_dir
+    return "Descriptive analysis and exploratory plots completed. Results saved to:", output_dir
 
-if __name__ == "__main__":
+def cli() -> None:
+    setup_logging()
+
+    try:
+        config = load_config()
+    except FileNotFoundError as e:
+        raise SystemExit(f"Configuration file not found: {e}")
+    except Exception as e:
+        raise SystemExit(f"Failed to load configuration: {e}")
+
+    try:
+        input_data = Path(config["paths"]["input"])
+        metrics = config["metrics"]
+        pairs = config["algorithm_pairs"]
+        algorithms = config["algorithms"]
+        samples = config["samples"]
+        reference_masks_dir = Path(config["paths"]["reference_masks_dir"])
+        output_dir = Path(config["paths"]["output_dir"])
+    except KeyError as e:
+        raise SystemExit(f"Missing required configuration key: {e}")
+    
     df = pd.read_csv(input_data)
+
     validator = DataValidator(
         required_columns=set(config["validation"]["required_columns"]),
         metric_columns=set(config["validation"]["metric_columns"]),
         expected_algorithms=set(algorithms)
     )
     validator.validate_light(df, context="exploratory analysis")
-    message, path = main(df)
+
+    message, path = run(
+        df, metrics, pairs, algorithms, samples, 
+        reference_masks_dir, config, output_dir)
     print(message, path)
+
+
+if __name__ == "__main__":
+    cli()
