@@ -47,7 +47,7 @@ def run(
     save_analysis_results(summary_df.reset_index(), Path(f"{output_dir}/metrics_summary.csv"))
     logger.info("Descriptive statistics summary saved.")
     # Histogram with KDE plots for each metric and algorithm.
-    plot_distributions(df, metrics, output_dir)
+    plot_distributions(df, metrics, Path(f"{output_dir}/descriptives"))
     logger.info("Distribution plots created.")
     # Paired boxplots with statistical annotations.
     plot_boxplots_with_stats(df, metrics, pairs, algorithms, Path(f"{output_dir}/boxplots"))
