@@ -77,7 +77,7 @@ def cli() -> None:
     try:
         algorithms = config["algorithms"]
         data_dir = Path(config["paths"]["data_root"])
-        masks_dir = Path(config["paths"]["data_root"]) / "masks"
+        masks_dir = Path(config["paths"]["data_root"]["masks_dir"])
         reference_masks_dir = Path(config["paths"]["reference_masks_dir"])
     except KeyError as e:
         raise SystemExit(f"Missing required configuration key: {e}")
