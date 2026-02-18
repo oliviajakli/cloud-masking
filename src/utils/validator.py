@@ -84,9 +84,9 @@ class DataValidator:
 
     # ---------- STRICT-ONLY ----------
     def _validate_uniqueness(self, df: pd.DataFrame, context: str):
-        if df.duplicated(subset=["algorithm", "sample_id"]).any():
+        if df.duplicated(subset=["algorithm", "scene_id"]).any():
             raise ValueError(
-                f"Duplicate (algorithm, sample_id) rows detected"
+                f"Duplicate (algorithm, scene_id) rows detected"
                 f"{self._ctx(context)}"
             )
 
