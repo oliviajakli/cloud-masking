@@ -15,7 +15,7 @@ from pipeline.run_normality_check import run as run_normality_tests
 from pipeline.run_friedman import run as run_friedman
 from pipeline.run_posthoc import run as run_posthoc
 from pipeline.run_bootstrap import run as run_bootstrap
-from pipeline.run_directional_error import run as run_directional_error
+from pipeline.run_directional import run as run_directional_error
 
 logger = logging.getLogger(__name__)
 

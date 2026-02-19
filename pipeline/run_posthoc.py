@@ -1,13 +1,13 @@
-from src.posthoc_tests import run_posthoc_wilcoxon, effect_size_cliffs_delta, bootstrap_cliffs_delta
-from src.utils.config import load_config
-from src.utils.io import save_analysis_results, validate_output_path_for_df
-from src.utils.logging import setup_logging
-from src.utils.validator import DataValidator
-
 from pathlib import Path
 import pandas as pd    # type: ignore
 import numpy as np   # type: ignore
 import logging
+
+from src.analysis.posthoc_tests import run_posthoc_wilcoxon, effect_size_cliffs_delta, bootstrap_cliffs_delta
+from src.utils.config import load_config
+from src.utils.io import save_analysis_results, validate_output_path_for_df
+from src.utils.logging import setup_logging
+from src.utils.validator import DataValidator
 
 logger = logging.getLogger(__name__)
 

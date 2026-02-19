@@ -1,6 +1,6 @@
 from pathlib import Path
 import logging
-from src.bootstrap import (
+from src.analysis.bootstrap import (
     compute_tile_mccs_all,
     list_scenes,
     summarize,

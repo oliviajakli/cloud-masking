@@ -2,8 +2,8 @@ from pathlib import Path
 import logging
 import pandas as pd # type: ignore
 
-from src.descriptive_stats import compute_descriptive_stats
-from src.exploratory_plots import (plot_distributions, plot_boxplots_with_stats,
+from src.analysis.descriptive_stats import compute_descriptive_stats
+from src.analysis.exploratory_plots import (plot_distributions, plot_boxplots_with_stats,
     plot_paired_differences, plot_bland_altman, plot_error_maps,plot_scatterplot, 
     plot_time_series)
 from src.utils.validator import DataValidator

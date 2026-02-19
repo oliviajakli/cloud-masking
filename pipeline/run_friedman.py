@@ -1,12 +1,12 @@
-from src.friedman import run_friedman_test
+from pathlib import Path
+import pandas as pd     # type: ignore
+import logging
+
+from src.analysis.friedman import run_friedman_test
 from src.utils.config import load_config
 from src.utils.logging import setup_logging
 from src.utils.validator import DataValidator
 from src.utils.io import validate_output_path_for_df, save_analysis_results
-
-from pathlib import Path
-import pandas as pd     # type: ignore
-import logging
 
 logger = logging.getLogger(__name__)
 

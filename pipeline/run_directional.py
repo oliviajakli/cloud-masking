@@ -2,7 +2,7 @@ from pathlib import Path
 import pandas as pd   # type: ignore
 import logging
 
-from src.directional_error import (
+from src.analysis.directional_error import (
     compute_precision_recall_diff,
     summary_table,
     plot_directional_bias
