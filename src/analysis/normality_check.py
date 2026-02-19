@@ -1,4 +1,3 @@
-from src.utils.io import save_csv
 from src.utils.plotting import save_figure
 
 import os
