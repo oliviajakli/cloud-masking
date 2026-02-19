@@ -149,6 +149,6 @@ def plot_directional_bias(df: pd.DataFrame, output_dir: Path) -> None:
     plt.ylabel("Precision − Recall")
     plt.title("Commission vs. Omission Bias per Algorithm")
 
-    fig_path = os.path.join(output_dir, "directional_bias_violinplot.png")
+    fig_path = os.path.join(output_dir, "directional_bias", "directional_bias_violinplot.png")
     save_figure(plt.gcf(), Path(fig_path))
     logger.info(f"Saved directional bias plot to {fig_path}.")
