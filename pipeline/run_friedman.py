@@ -11,7 +11,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def main(df: pd.DataFrame, output_dir: Path) -> tuple[str, Path]:
+def run(df: pd.DataFrame, output_dir: Path) -> tuple[str, Path]:
     """Run Friedman test on algorithm results.
     Args:
         df (pd.DataFrame): DataFrame with algorithm results.
@@ -19,10 +19,9 @@ def main(df: pd.DataFrame, output_dir: Path) -> tuple[str, Path]:
     Returns:
         str: Message indicating where results are saved.
     """
-    setup_logging()
     logger.info("Starting Friedman test analysis.")
     # Set output path for results.
-    output_path = output_dir / "friedman_test_results.csv"
+    output_path = Path(f"{output_dir}/hypothesis/friedman_test_results.csv")
     # Run Friedman test.
     result_df = run_friedman_test(df)
     # Validate output path before saving.
@@ -35,7 +34,6 @@ def main(df: pd.DataFrame, output_dir: Path) -> tuple[str, Path]:
 def cli():
     setup_logging()
 
-    # Load and validate configuration
     try:
         config = load_config()
     except FileNotFoundError as e:
@@ -60,7 +58,7 @@ def cli():
 
     validator.validate_light(df, context="Friedman test analysis")
 
-    message, path = main(df, output_dir)
+    message, path = run(df, output_dir)
     print(message, path)
 
 
