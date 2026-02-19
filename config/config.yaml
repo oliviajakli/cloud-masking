@@ -34,6 +34,11 @@ statistics:
   alpha: 0.05
   random_seed: 42
 
+bootstrap:
+  tile_size: 256    # tile size in pixels
+  b_scene: 1000     # per-scene tile bootstrap replicates
+  b_global: 2000    # global paired bootstrap replicates
+
 validation:
   required_columns:
     - scene_id
