@@ -1,3 +1,7 @@
+from pathlib import Path
+import pandas as pd   # type: ignore
+import logging
+
 from src.directional_error import (
     compute_precision_recall_diff,
     summary_table,
@@ -8,15 +12,11 @@ from src.utils.logging import setup_logging
 from src.utils.validator import DataValidator
 from src.utils.io import save_analysis_results, validate_output_path_for_df
 
-from pathlib import Path
-import pandas as pd   # type: ignore
-import logging
-
 
 logger = logging.getLogger(__name__)
 
 
-def main(df: pd.DataFrame, output_dir: Path) -> tuple[str, Path]:
+def run(df: pd.DataFrame, output_dir: Path) -> tuple[str, Path]:
     """Main function to run directional error analysis.
     Args:
         df (pd.DataFrame): Input dataframe with precision and recall data.
@@ -24,14 +24,13 @@ def main(df: pd.DataFrame, output_dir: Path) -> tuple[str, Path]:
     Returns:
         tuple[str, Path]: Message and path to output directory.
     """
-    setup_logging()
     logger.info("Starting directional error analysis.")
     # Compute precision-recall difference and add as a new column.
     df = compute_precision_recall_diff(df)
     logger.info("Computed precision-recall differences.")
     # Generate summary table and save to CSV.
     summary_df = summary_table(df)
-    summary_path = Path(f"{output_dir}/directional_error_summary.csv")
+    summary_path = Path(f"{output_dir}/directional_bias/directional_error_summary.csv")
     # Validate output path before saving.
     validate_output_path_for_df(summary_path, summary_df)
     # Save results of summary table as CSV.
@@ -43,7 +42,8 @@ def main(df: pd.DataFrame, output_dir: Path) -> tuple[str, Path]:
     return "Directional analysis completed. Results saved to:", output_dir
 
 def cli():
-    # Load and validate configuration
+    setup_logging()
+
     try:
         config = load_config()
     except FileNotFoundError as e:
@@ -64,7 +64,7 @@ def cli():
         expected_algorithms=set(config["algorithm_pairs"].keys())
     )
     validator.validate_light(df, context="directional analysis")
-    message, path = main(df, output_dir)
+    message, path = run(df, output_dir)
     print(message, path)
 
 if __name__ == "__main__":
