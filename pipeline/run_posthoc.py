@@ -11,23 +11,13 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Load and validate configuration
-try:
-    config = load_config()
-except FileNotFoundError as e:
-    raise SystemExit(f"Configuration file not found: {e}")
-except Exception as e:
-    raise SystemExit(f"Failed to load configuration: {e}")
 
-try:
-    input_data = Path(config["paths"]["input"])
-    pairs = config["algorithm_pairs"]
-    random_seed = config["statistics"]["random_seed"]
-    output_dir = Path(config["paths"]["output_dir"])
-except KeyError as e:
-    raise SystemExit(f"Missing required configuration key: {e}")
-
-def main(df: pd.DataFrame) -> str:
+def run(
+        df: pd.DataFrame, 
+        pairs: list[tuple[str, str]], 
+        random_seed: int, 
+        output_dir: Path
+        ) -> str:
     """Run post-hoc Wilcoxon signed-rank tests with Holm-Bonferroni correction
     and calculate Cliff's Delta effect sizes with bootstrap CIs.
     Args:
@@ -35,7 +25,6 @@ def main(df: pd.DataFrame) -> str:
     Returns:
         str: Message indicating where results are saved.
     """
-    setup_logging()
     logger.info("Starting post-hoc analysis.")
     # Pivot to wide format (scenes x algorithms). Algorithms will be in alphabetical order.
     mcc_wide = df.pivot(index='scene_id', columns='algorithm', values='mcc')
@@ -64,7 +53,7 @@ def main(df: pd.DataFrame) -> str:
         on=['algorithm_a', 'algorithm_b']
     )
     logger.debug(f"Combined post-hoc results:\n{posthoc_df.head()}")
-    out_path = Path(f"{output_dir}/posthoc_cliffs_delta_results.csv")
+    out_path = Path(f"{output_dir}/posthoc/posthoc_cliffs_delta_results.csv")
 
     # Calculate bootstrap 95% CIs for Cliff's Delta for each pair and save to dataframe.
     for (a, b) in pairs:
@@ -90,12 +79,32 @@ def main(df: pd.DataFrame) -> str:
     logger.info("Post-hoc analysis completed and results saved.")
     return f"Post-hoc results saved to {out_path}"
 
-if __name__ == "__main__":
+def cli() -> None:
+    setup_logging()
+    try:
+        config = load_config()
+    except FileNotFoundError as e:
+        raise SystemExit(f"Configuration file not found: {e}")
+    except Exception as e:
+        raise SystemExit(f"Failed to load configuration: {e}")
+
+    try:
+        input_data = Path(config["paths"]["input"])
+        pairs = config["algorithm_pairs"]
+        random_seed = config["statistics"]["random_seed"]
+        output_dir = Path(config["paths"]["output_dir"])
+    except KeyError as e:
+        raise SystemExit(f"Missing required configuration key: {e}")
+    
     df = pd.read_csv(input_data)
+
     validator = DataValidator(
         required_columns=set(config["validation"]["required_columns"]),
         metric_columns=set(config["validation"]["metric_columns"]),
         expected_algorithms=set(pairs.keys())
     )
     validator.validate_light(df, context="post-hoc analysis")
-    print(main(df))
+    print(run(df, pairs, random_seed, output_dir))
+
+if __name__ == "__main__":
+    cli()
