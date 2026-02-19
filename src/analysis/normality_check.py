@@ -12,46 +12,31 @@ import seaborn as sns   # type: ignore
 logger = logging.getLogger(__name__)
 
 
-def compute_pairwise_differences(df: pd.DataFrame, output_dir: Path) -> tuple[pd.Series, pd.Series, pd.Series]:
+def compute_pairwise_differences(df: pd.DataFrame) -> tuple[pd.Series, pd.Series, pd.Series]:
     """Compute pairwise differences in MCC between algorithms.
     Args:
         df (pd.DataFrame): DataFrame with columns 'scene_id', 'algorithm', 'mcc'.
-        output_dir (Path): Directory to save output CSV files.
     Returns:
         tuple[pd.Series, pd.Series, pd.Series]: Pairwise differences in MCC:
             (hybrid - s2cloudless, hybrid - cloudscoreplus, s2cloudless - cloudscoreplus)
     """
     logger.info("Computing pairwise differences in MCC between algorithms.")
-    # Pivot to wide format (scenes x algorithms). Algorithms will be in alphabetical order.
-    mcc_wide = df.pivot(index='scene_id', columns='algorithm', values='mcc')
-    logger.debug(f"MCC wide format DataFrame:\n{mcc_wide}")
 
-    required = {"hybrid", "s2cloudless", "cloudscoreplus"}
-    if not required.issubset(mcc_wide.columns):
-        raise ValueError(f"Missing algorithms: {required - set(mcc_wide.columns)}")
+    diff_hy_s2 = df["hybrid"] - df["s2cloudless"]
+    diff_hy_cs = df["hybrid"] - df["cloudscoreplus"]
+    diff_s2_cs = df["s2cloudless"] - df["cloudscoreplus"]
 
-    diff_hy_s2 = mcc_wide["hybrid"] - mcc_wide["s2cloudless"]
-    diff_hy_cs = mcc_wide["hybrid"] - mcc_wide["cloudscoreplus"]
-    diff_s2_cs = mcc_wide["s2cloudless"] - mcc_wide["cloudscoreplus"]
-
-    # Save differences to output directory.
-    output_path = output_dir / "pairwise_mcc_differences.csv"
-    diff_df = pd.DataFrame({
-        'scene_id': mcc_wide.index,
-        'diff_hybrid_s2cloudless': diff_hy_s2,
-        'diff_hybrid_cloudscoreplus': diff_hy_cs,
-        'diff_s2cloudless_cloudscoreplus': diff_s2_cs
-    })
-    save_csv(diff_df, output_path)
-    logger.info("Pairwise differences in MCC saved.")
-    logger.debug(f"Pairwise differences DataFrame:\n{diff_df}")
     return diff_hy_s2, diff_hy_cs, diff_s2_cs
 
-def shapiro_wilk_test(pairs: list, diff_pair1: pd.Series, diff_pair2: pd.Series, diff_pair3: pd.Series) -> pd.DataFrame:
+def shapiro_wilk_test(
+        pairs: list, 
+        diff_pair1: pd.Series, 
+        diff_pair2: pd.Series, 
+        diff_pair3: pd.Series
+        ) -> pd.DataFrame:
     """Test normality of pairwise differences in MCC using Shapiro–Wilk test.
     Args:
         pairs (list): List of algorithm pairs to compare.
-        output_dir (Path): Directory to save output CSV files and figures.
     Returns:
         pd.DataFrame: DataFrame with Shapiro-Wilk test results for each pair.
     """
@@ -72,7 +57,12 @@ def shapiro_wilk_test(pairs: list, diff_pair1: pd.Series, diff_pair2: pd.Series,
     return result_df
 
 
-def plot_normality(diff_pair1: pd.Series, diff_pair2: pd.Series, diff_pair3: pd.Series, output_dir: Path) -> None:
+def plot_normality(
+        diff_pair1: pd.Series, 
+        diff_pair2: pd.Series, 
+        diff_pair3: pd.Series, 
+        output_dir: Path
+        ) -> None:
     """Plot histograms and KDEs of pairwise differences in MCC.
     Args:
         diff_pair1 (pd.Series): Series of pairwise differences.
@@ -84,9 +74,9 @@ def plot_normality(diff_pair1: pd.Series, diff_pair2: pd.Series, diff_pair3: pd.
     """
     logger.info("Plotting histograms and KDEs of pairwise differences in MCC.")
     diff_series_list = [
-        ("hybrid - s2cloudless (MCC)", diff_pair1),
-        ("hybrid - cloudscoreplus (MCC)", diff_pair2),
-        ("s2cloudless - cloudscoreplus (MCC)", diff_pair3),
+        ("hybrid - s2cloudless", diff_pair1),
+        ("hybrid - cloudscoreplus", diff_pair2),
+        ("s2cloudless - cloudscoreplus", diff_pair3),
     ]
     logger.debug(f"Preparing to plot differences: {[label for label, _ in diff_series_list]}")
     for title_label, diff_series in diff_series_list:
@@ -108,9 +98,9 @@ def plot_normality(diff_pair1: pd.Series, diff_pair2: pd.Series, diff_pair3: pd.
         )
 
         fig_path = os.path.join(
-            output_dir, 
-            f'histogram_kde_mcc_diff_{title_label.replace(" ", "_")
-            .replace("-", "vs").replace("(", "").replace(")", "")}.png'
+            output_dir, "hypothesis",
+            f"histogram_kde_mcc_diff_{title_label.replace(" ", "_")
+            .replace("-", "vs").replace("(", "").replace(")", "")}.png"
             )
 
         plt.title(f'Distribution of MCC Differences: {title_label}')
