@@ -1,12 +1,13 @@
+import logging
 from pathlib import Path
 import pandas as pd     # type: ignore
-import logging
 
 from src.analysis.friedman import run_friedman_test
 from src.utils.config import load_config
 from src.utils.logging import setup_logging
 from src.utils.validator import DataValidator
 from src.utils.io import validate_output_path_for_df, save_analysis_results
+
 
 logger = logging.getLogger(__name__)
 
@@ -42,14 +43,15 @@ def cli():
         raise SystemExit(f"Failed to load configuration: {e}")
 
     try:
-        input_data = Path(config["paths"]["input"])
+        input_data = Path(config["paths"]["metrics_df"])
         pairs = config["algorithm_pairs"]
-        output_dir = Path(config["paths"]["output_dir"])
+        output_dir = Path(config["paths"]["output_root"])
     except KeyError as e:
         raise SystemExit(f"Missing required configuration key: {e}")
 
     df = pd.read_csv(input_data)
 
+    # Validate input data with light validation before running analysis.
     validator = DataValidator(
         required_columns=set(config["validation"]["required_columns"]),
         metric_columns=set(config["validation"]["metric_columns"]),
