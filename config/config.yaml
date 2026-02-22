@@ -1,10 +1,11 @@
 paths:
-  input: data/per_scene_evaluation_metrics.csv
-  output_dir: results
+  metrics_df: data/per_scene_evaluation_metrics.csv
+  output_root: results
   figures_dir: results/figures
   data_root: data
   masks_dir: data/masks
   reference_masks_dir: data/masks/reference
+  # Sample directories for error maps visualization.
   reference_samples_dir: data/samples/reference
   cloudscoreplus_samples_dir: data/samples/cloudscoreplus
   hybrid_samples_dir: data/samples/hybrid
