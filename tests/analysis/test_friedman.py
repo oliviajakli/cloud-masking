@@ -1,4 +1,4 @@
-from src.friedman import run_friedman_test
+from src.analysis.friedman import run_friedman_test
 import pandas as pd
 import pytest
 

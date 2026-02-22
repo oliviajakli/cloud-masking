@@ -3,7 +3,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
-from src.evaluation import compute_metrics, plot_confusion_matrix
+from src.analysis.evaluation import compute_metrics, plot_confusion_matrix
 
 
 # Unit tests for compute_metrics.

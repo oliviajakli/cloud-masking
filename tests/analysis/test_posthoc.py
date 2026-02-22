@@ -1,4 +1,5 @@
-from src.posthoc_tests import run_posthoc_wilcoxon, effect_size_cliffs_delta, bootstrap_cliffs_delta
+from src.analysis.posthoc_tests import (
+    run_posthoc_wilcoxon, effect_size_cliffs_delta, bootstrap_cliffs_delta)
 import pandas as pd
 import numpy as np
 import pytest

@@ -1,5 +1,6 @@
 import pandas as pd
-from src.normality_check import compute_pairwise_differences, plot_normality, shapiro_wilk_test
+from src.analysis.normality_check import (
+    compute_pairwise_differences, plot_normality, shapiro_wilk_test)
 import pytest
 
 def test_compute_pairwise_differences_correct(tmp_path):
@@ -12,10 +13,7 @@ def test_compute_pairwise_differences_correct(tmp_path):
         "mcc": [0.7, 0.8, 0.6, 0.75, 0.85, 0.65],
     })
 
-    diff_hy_s2, diff_hy_cs, diff_s2_cs = compute_pairwise_differences(
-        df=df,
-        output_dir=tmp_path,
-    )
+    diff_hy_s2, diff_hy_cs, diff_s2_cs = compute_pairwise_differences(df=df)
 
     # Length equals number of scenes
     assert len(diff_hy_s2) == 2
@@ -36,7 +34,7 @@ def test_compute_pairwise_differences_missing_algorithm(tmp_path):
     })
 
     with pytest.raises(ValueError):
-        compute_pairwise_differences(df, tmp_path)
+        compute_pairwise_differences(df)
 
 def test_shapiro_wilk_test_structure():
     diffs = [

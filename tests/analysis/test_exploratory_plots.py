@@ -1,4 +1,4 @@
-from src.exploratory_plots import (
+from src.analysis.exploratory_plots import (
     bootstrap_ci, compute_error_map, plot_bland_altman, plot_boxplots_with_stats, 
     plot_paired_differences, validate_metrics, make_distribution_plot, plot_distributions)
 from unittest.mock import patch

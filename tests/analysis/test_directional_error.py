@@ -1,4 +1,4 @@
-from src.directional_error import (compute_precision_recall_diff, bootstrap_median_ci, 
+from src.analysis.directional_error import (compute_precision_recall_diff, bootstrap_median_ci, 
     plot_directional_bias, summary_table, wilcoxon_vs_zero)
 import pandas as pd
 import numpy as np

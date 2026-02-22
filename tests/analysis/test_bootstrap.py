@@ -1,4 +1,4 @@
-from src.bootstrap import (bootstrap_scene_tiles, list_scenes, compute_tile_mccs_all, 
+from src.analysis.bootstrap import (bootstrap_scene_tiles, list_scenes, compute_tile_mccs_all, 
     mcc_per_tile, safe_mcc, summarize, tile_array, two_level_bootstrap)
 from pathlib import Path
 import numpy as np
