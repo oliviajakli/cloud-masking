@@ -1,8 +1,8 @@
 """
 Run evaluation metrics and confusion matrix analysis.
 """
-from pathlib import Path
 import logging
+from pathlib import Path
 from sklearn.metrics import confusion_matrix  # type: ignore
 
 from src.analysis.evaluation import compute_metrics, plot_confusion_matrix
@@ -18,7 +18,7 @@ def run(
     algorithms: list[str],
     masks_dir: Path,
     reference_masks_dir: Path,
-    data_dir: Path,
+    metrics_df_path: Path,
     validation_config: DataValidator,
 ) -> Path:
     """
@@ -27,23 +27,23 @@ def run(
         algorithms: List of algorithm names to evaluate.
         masks_dir: Path to directory containing algorithm mask subdirectories.
         reference_masks_dir: Path to directory containing reference masks.
-        data_dir: Path to directory for saving output metrics and plots.
+        metrics_df_path: Path to CSV file for saving output metrics.
         validation_config: DataValidator instance for validating computed metrics.
     Returns:
         output_csv: Path to saved metrics CSV.
     """
     logger.info("Starting evaluation process.")
 
-    output_csv = data_dir / "per_scene_evaluation_metrics.csv"
+    output_csv = metrics_df_path
     validate_output_path(output_csv, required_space_mb=10)
 
-    # Compute evaluation metrics
+    # Compute and produce dataframe of evaluation metrics.
     df = compute_metrics(masks_dir)
 
     # Load reference masks once to avoid redundant I/O operations during metric computation.
     reference_masks_list = load_masks(reference_masks_dir)
 
-    # logger.debug(f"Loaded {len(reference_masks_list)} reference masks for evaluation.")
+    logger.debug(f"Loaded {len(reference_masks_list)} reference masks for evaluation.")
     # Compute and plot confusion matrices for each scene and algorithm combination.
     for alg in algorithms:
         alg_masks_list = load_masks(masks_dir / alg)
@@ -75,13 +75,15 @@ def cli() -> None:
         raise SystemExit(f"Failed to load configuration: {e}")
 
     try:
+        metrics_df_path = Path(config["paths"]["metrics_df"])
         algorithms = config["algorithms"]
-        data_dir = Path(config["paths"]["data_root"])
         masks_dir = Path(config["paths"]["data_root"]["masks_dir"])
         reference_masks_dir = Path(config["paths"]["reference_masks_dir"])
     except KeyError as e:
         raise SystemExit(f"Missing required configuration key: {e}")
     
+    # Heavy validation to ensure all required paths, algorithms, and metric columns 
+    # are present before running evaluation, which will be the main input for analyses.
     validation_config = DataValidator(
         required_columns=set(config["validation"]["required_columns"]),
         metric_columns=set(config["validation"]["metric_columns"]),
@@ -102,7 +104,7 @@ def cli() -> None:
         algorithms=algorithms,
         masks_dir=masks_dir,
         reference_masks_dir=reference_masks_dir,
-        data_dir=data_dir,
+        metrics_df_path=metrics_df_path,
         validation_config=validation_config,
     )
 

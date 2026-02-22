@@ -2,10 +2,9 @@ from pathlib import Path
 import logging
 import pandas as pd # type: ignore
 
-from src.analysis.descriptive_stats import compute_descriptive_stats
-from src.analysis.exploratory_plots import (plot_distributions, plot_boxplots_with_stats,
-    plot_paired_differences, plot_bland_altman, plot_error_maps,plot_scatterplot, 
-    plot_time_series)
+from src.analysis.exploratory_plots import (compute_descriptive_stats, plot_distributions, 
+    plot_boxplots_with_stats,plot_paired_differences, plot_bland_altman, plot_error_maps,
+    plot_scatterplot, plot_time_series)
 from src.utils.validator import DataValidator
 from src.utils.config import load_config
 from src.utils.io import save_analysis_results, validate_output_path_for_df
@@ -81,18 +80,19 @@ def cli() -> None:
         raise SystemExit(f"Failed to load configuration: {e}")
 
     try:
-        input_data = Path(config["paths"]["input"])
+        input_data = Path(config["paths"]["metrics_df"])
         metrics = config["metrics"]
         pairs = config["algorithm_pairs"]
         algorithms = config["algorithms"]
         samples = config["samples"]
         reference_masks_dir = Path(config["paths"]["reference_masks_dir"])
-        output_dir = Path(config["paths"]["output_dir"])
+        output_dir = Path(config["paths"]["output_root"])
     except KeyError as e:
         raise SystemExit(f"Missing required configuration key: {e}")
     
     df = pd.read_csv(input_data)
 
+    # Light validation to ensure required columns and algorithms are present before plotting.
     validator = DataValidator(
         required_columns=set(config["validation"]["required_columns"]),
         metric_columns=set(config["validation"]["metric_columns"]),
