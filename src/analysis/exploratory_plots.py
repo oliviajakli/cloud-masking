@@ -1,27 +1,55 @@
+import itertools
+import logging
+import os
+from pathlib import Path
+from typing import cast
+
+import matplotlib.patches as mpatches  # type: ignore
+import matplotlib.pyplot as plt  # type: ignore
+import numpy as np  # type: ignore
+import pandas as pd  # type: ignore
+import rasterio  # type: ignore
+import seaborn as sns  # type: ignore
+from matplotlib.colors import ListedColormap  # type: ignore
+from scipy.stats import wilcoxon  # type: ignore
+from statannotations.Annotator import Annotator  # type: ignore
+
 from src.utils.plotting import save_figure
 
-import os
-import logging
-from pathlib import Path
-import itertools
-import rasterio     # type: ignore
-import pandas as pd   # type: ignore
-import numpy as np  # type: ignore
-import seaborn as sns   # type: ignore
-import matplotlib.pyplot as plt    # type: ignore
-import matplotlib.patches as mpatches   # type: ignore
-from matplotlib.colors import ListedColormap    # type: ignore
-from scipy.stats import wilcoxon    # type: ignore
-from statannotations.Annotator import Annotator # type: ignore
 
 logger = logging.getLogger(__name__)
 
-    
-def validate_metrics(df: pd.DataFrame, metrics: list):
+
+# Check measures of central tendency and dispersion for each algorithm.
+def compute_descriptive_stats( df: pd.DataFrame, metrics: list[str]) -> pd.DataFrame:
+    """Core function to compute descriptive statistics for each algorithm.
+    Args:
+        df (pd.DataFrame): DataFrame containing columns 'algorithm' and specified metrics.
+        metrics (list[str]): List of metric names to compute descriptive statistics for.
+    Returns:
+        pd.DataFrame: Summary DataFrame with median and std dev for each metric per algorithm.
+    """
+    rows = []
+    # Aggregate median and std dev for each metric by algorithm.
+    for algo, group in df.groupby("algorithm"):
+        for metric in metrics:
+            if metric not in group.columns:
+                raise ValueError(f"Metric '{metric}' not found")
+
+            rows.append({
+                "algorithm": algo,
+                "metric": metric,
+                "median": group[metric].median(),
+                "std": group[metric].std(),
+            })
+
+    return pd.DataFrame(rows)
+
+def validate_metrics(df: pd.DataFrame, metrics: list[str]):
     """Raise an error if a metric or metrics are missing.
     Args:
         df (pd.DataFrame): DataFrame containing metrics and algorithm labels.
-        metrics (list): List of metric column names to plot.
+        metrics (list[str]): List of metric column names to plot.
     Raises:
         ValueError: If metrics are missing
     """
@@ -41,7 +69,16 @@ def make_distribution_plot(df: pd.DataFrame, metric: str):
     sns.histplot(data=df, x=metric, hue="algorithm", kde=True, ax=ax)
     return fig, ax
 
-def plot_distributions(df: pd.DataFrame, metrics: list, output_dir: Path):
+def plot_distributions(df: pd.DataFrame, metrics: list[str], output_dir: Path):
+    """Plot histograms with KDE for each metric across algorithms.
+    Args:
+        df (pd.DataFrame): DataFrame containing metrics and algorithm labels.
+        metrics (list[str]): List of metric column names to plot.
+        output_dir (Path): Directory to save the plots.
+    Returns:
+        None
+    """
+    logger.info("Plotting distributions for metrics across algorithms.")
     validate_metrics(df, metrics)
     output_dir.mkdir(parents=True, exist_ok=True)
     
@@ -54,14 +91,18 @@ def plot_distributions(df: pd.DataFrame, metrics: list, output_dir: Path):
         logger.debug(f"Distribution plot data:\n{df[[metric, 'algorithm']].head()}")
         save_figure(fig, output_dir / f"{metric}_distribution.png")
 
-
-def plot_boxplots_with_stats(df: pd.DataFrame, metrics: list, pairs: list, algorithms: list, output_dir: Path) -> None:
+def plot_boxplots_with_stats(
+        df: pd.DataFrame, 
+        metrics: list[str], 
+        pairs: list[tuple[str, str]], 
+        algorithms: list[str], 
+        output_dir: Path) -> None:
     """Plot boxplots for each metric across algorithms with statistical annotations.
     Args:
         df (pd.DataFrame): DataFrame containing metrics and algorithm labels.
-        metrics (list): List of metric column names to plot.
-        pairs (list of tuples): List of algorithm pairs for statistical comparison.
-        algorithms (list): List of algorithm names.
+        metrics (list[str]): List of metric column names to plot.
+        pairs (list[tuple[str, str]]): List of algorithm pairs for statistical comparison.
+        algorithms (list[str]): List of algorithm names.
         output_dir (Path): Directory to save the plots.
     Returns:
         None
@@ -72,7 +113,9 @@ def plot_boxplots_with_stats(df: pd.DataFrame, metrics: list, pairs: list, algor
     for metric in metrics:
         logger.info(f"Plotting boxplot for metric: {metric}")
         plt.figure(figsize=(7,5))
-        ax = sns.boxplot(data=df, x="algorithm", y=metric, hue="algorithm", palette="pastel", showmeans=True, legend=False)
+        ax = sns.boxplot(
+            data=df, x="algorithm", y=metric, hue="algorithm", 
+            palette="pastel", showmeans=True, legend=False)
         sns.stripplot(data=df, x="algorithm", y=metric, color="gray", size=5, alpha=0.6, jitter=True)
 
         # Compute Wilcoxon signed-rank tests for each pair (paired because same samples).
@@ -80,8 +123,8 @@ def plot_boxplots_with_stats(df: pd.DataFrame, metrics: list, pairs: list, algor
         for a1, a2 in pairs:
             logger.debug(f"Computing Wilcoxon test between {a1} and {a2} for metric {metric}")
             # Extract paired values using the same samples.
-            vals1 = df.loc[df["algorithm"] == a1, metric].values
-            vals2 = df.loc[df["algorithm"] == a2, metric].values
+            vals1 = cast(pd.Series, df.loc[df["algorithm"] == a1, metric]).to_numpy()
+            vals2 = cast(pd.Series, df.loc[df["algorithm"] == a2, metric]).to_numpy()
             logger.debug(f"Values for {a1}: {vals1}")
             logger.debug(f"Values for {a2}: {vals2}")
             # Run Wilcoxon signed-rank test (paired, non-parametric).
@@ -98,10 +141,10 @@ def plot_boxplots_with_stats(df: pd.DataFrame, metrics: list, pairs: list, algor
 
         for i, alg in enumerate(algorithms):
             logger.debug(f"Annotating median and std for algorithm: {alg}")
-            vals = df.loc[df["algorithm"] == alg, metric]
-            median_val = vals.median()
-            std_val  = vals.std()
-            y_val = float(median_val.iloc[0]) + 0.01 if isinstance(median_val, pd.Series) else median_val + 0.01
+            vals = cast(pd.Series, df.loc[df["algorithm"] == alg, metric])
+            median_val = float(vals.median())
+            std_val  = float(vals.std())
+            y_val = median_val + 0.01
             ax.text(i, y_val, f"{median_val:.3f} ± {std_val:.3f}",
                     ha="center", fontsize=10, color="black")
             logger.debug(f"{alg} - Median: {median_val}, Std: {std_val}")
@@ -115,7 +158,12 @@ def plot_boxplots_with_stats(df: pd.DataFrame, metrics: list, pairs: list, algor
         save_figure(plt.gcf(), Path(fig_path))
         logger.info(f"Saved boxplot for {metric} to {fig_path}")
 
-def bootstrap_ci(data: np.ndarray, n_boot: int = 10000, ci: float = 95, random_state: int = 42) -> tuple:
+def bootstrap_ci(
+        data: np.ndarray, 
+        n_boot: int = 10000, 
+        ci: float = 95, 
+        random_state: int = 42
+        ) -> tuple[float, float, float]:
     """Compute bootstrap confidence interval for the mean of the data.
     Args:
         data (array-like): Input data for bootstrapping.
@@ -126,19 +174,30 @@ def bootstrap_ci(data: np.ndarray, n_boot: int = 10000, ci: float = 95, random_s
         tuple: (mean, lower_bound, upper_bound)
     """
     logger.info("Computing bootstrap confidence interval.")
-    rng = np.random.default_rng(random_state)
-    boot_means = [np.mean(rng.choice(data, size=len(data), replace=True)) for _ in range(n_boot)]
-    lower = np.percentile(boot_means, (100 - ci) / 2)
-    upper = np.percentile(boot_means, 100 - (100 - ci) / 2)
-    logger.info(f"Bootstrap CI computed: Mean={np.mean(data)}, CI=({lower}, {upper})")
-    return np.mean(data), lower, upper
 
-def plot_paired_differences(df: pd.DataFrame, metrics: list, pairs: list, output_dir: Path) -> None:
-    """Plot paired differences for each metric between algorithm pairs with bootstrap CIs and Wilcoxon p-values.
+    arr = np.asarray(data, dtype=float).ravel()
+    rng = np.random.default_rng(random_state)
+
+    boot_means = [float(np.mean(rng.choice(arr, size=len(arr), replace=True))) for _ in range(n_boot)]
+    lower = float(np.percentile(boot_means, (100 - ci) / 2))
+    upper = float(np.percentile(boot_means, 100 - (100 - ci) / 2))
+    mean_val = float(np.mean(arr))
+
+    logger.info(f"Bootstrap CI computed: Mean={mean_val}, CI=({lower}, {upper})")
+    return mean_val, lower, upper
+
+def plot_paired_differences(
+        df: pd.DataFrame, 
+        metrics: list[str], 
+        pairs: list[tuple[str, str]], 
+        output_dir: Path
+        ) -> None:
+    """Plot paired differences for each metric between algorithm pairs 
+    with bootstrap CIs and Wilcoxon p-values.
     Args:
         df (pd.DataFrame): DataFrame containing metrics and algorithm labels.
-        metrics (list): List of metric column names to plot.
-        pairs (list of tuples): List of algorithm pairs for comparison.
+        metrics (list[str]): List of metric column names to plot.
+        pairs (list[tuple[str, str]]): List of algorithm pairs for comparison.
         output_dir (Path): Directory to save the plots.
     Returns:
         None
@@ -168,9 +227,11 @@ def plot_paired_differences(df: pd.DataFrame, metrics: list, pairs: list, output
             # Compute differences and statistics.
             logger.debug(f"Computing differences for {a1} - {a2}")
             diffs = df_pivot[a1] - df_pivot[a2]
-            mean_diff, ci_low, ci_high = bootstrap_ci(diffs)
+            mean_diff, ci_low, ci_high = bootstrap_ci(diffs.to_numpy())
             stat, p = wilcoxon(df_pivot[a1], df_pivot[a2])
-            logger.info(f"{a1} vs {a2} for {metric}: Mean diff={mean_diff}, 95% CI=({ci_low}, {ci_high}), Wilcoxon p={p}")
+            logger.info(
+                f"{a1} vs {a2} for {metric}: Mean diff={mean_diff}, \
+                    95% CI=({ci_low}, {ci_high}), Wilcoxon p={p}")
 
             # Identify outliers (±1.5×IQR) for annotation.
             logger.debug("Identifying outliers for annotation.")
@@ -196,7 +257,8 @@ def plot_paired_differences(df: pd.DataFrame, metrics: list, pairs: list, output
 
             # Title & labels with stats.
             ax.set_title(
-                f"{a1} − {a2}\nMean Δ = {mean_diff:.3f}, 95% CI [{ci_low:.3f}, {ci_high:.3f}]\nWilcoxon p = {p:.4f}",
+                f"{a1} − {a2}\nMean Δ = {mean_diff:.3f}, \
+                    95% CI [{ci_low:.3f}, {ci_high:.3f}]\nWilcoxon p = {p:.4f}",
                 fontsize=12
             )
             ax.set_ylabel(f"{metric} Difference ({a1} − {a2})")
@@ -238,7 +300,8 @@ def plot_bland_altman(df: pd.DataFrame, pairs: list, output_dir: Path) -> None:
         sd_diff = diffs.std(ddof=1)
         loa_upper = mean_diff + 1.96 * sd_diff
         loa_lower = mean_diff - 1.96 * sd_diff
-        logger.info(f"Bland-Altman stats for {a1} vs {a2}: Mean diff={mean_diff}, Upper LoA={loa_upper}, Lower LoA={loa_lower}")
+        logger.info(f"Bland-Altman stats for {a1} vs {a2}: Mean diff={mean_diff}, \
+                    Upper LoA={loa_upper}, Lower LoA={loa_lower}")
 
         # Create Bland-Altman plot.
         logger.info("Creating Bland-Altman plot.")
@@ -285,7 +348,13 @@ def compute_error_map(reference: np.ndarray, predicted: np.ndarray) -> np.ndarra
     error_map[(reference == 1) & (predicted == 0)] = 4
     return error_map
 
-def plot_error_maps(algorithms: list, samples: list, reference_masks: Path, config: dict, output_dir: Path) -> None:
+def plot_error_maps(
+        algorithms: list, 
+        samples: list, 
+        reference_masks: Path, 
+        config: dict, 
+        output_dir: Path
+        ) -> None:
     """Generate per-pixel error maps for each algorithm and sample compared to reference masks.
     Args:
         algorithms (list): List of algorithm names.
