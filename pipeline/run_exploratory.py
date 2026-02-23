@@ -80,7 +80,7 @@ def cli() -> None:
         raise SystemExit(f"Failed to load configuration: {e}")
 
     try:
-        input_data = Path(config["paths"]["metrics_df"])
+        input_data = Path(config["paths"]["metrics_csv"])
         metrics = config["metrics"]
         pairs = config["algorithm_pairs"]
         algorithms = config["algorithms"]

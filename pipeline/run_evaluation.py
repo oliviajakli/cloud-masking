@@ -18,7 +18,7 @@ def run(
     algorithms: list[str],
     masks_dir: Path,
     reference_masks_dir: Path,
-    metrics_df_path: Path,
+    metrics_csv_path: Path,
     validation_config: DataValidator,
 ) -> Path:
     """
@@ -34,7 +34,7 @@ def run(
     """
     logger.info("Starting evaluation process.")
 
-    output_csv = metrics_df_path
+    output_csv = metrics_csv_path
     validate_output_path(output_csv, required_space_mb=10)
 
     # Compute and produce dataframe of evaluation metrics.
@@ -75,9 +75,9 @@ def cli() -> None:
         raise SystemExit(f"Failed to load configuration: {e}")
 
     try:
-        metrics_df_path = Path(config["paths"]["metrics_df"])
+        metrics_csv_path = Path(config["paths"]["metrics_csv"])
         algorithms = config["algorithms"]
-        masks_dir = Path(config["paths"]["data_root"]["masks_dir"])
+        masks_dir = Path(config["paths"]["masks_dir"])
         reference_masks_dir = Path(config["paths"]["reference_masks_dir"])
     except KeyError as e:
         raise SystemExit(f"Missing required configuration key: {e}")
@@ -104,7 +104,7 @@ def cli() -> None:
         algorithms=algorithms,
         masks_dir=masks_dir,
         reference_masks_dir=reference_masks_dir,
-        metrics_df_path=metrics_df_path,
+        metrics_csv_path=metrics_csv_path,
         validation_config=validation_config,
     )
 

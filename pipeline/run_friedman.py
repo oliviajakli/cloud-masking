@@ -43,7 +43,7 @@ def cli():
         raise SystemExit(f"Failed to load configuration: {e}")
 
     try:
-        input_data = Path(config["paths"]["metrics_df"])
+        input_data = Path(config["paths"]["metrics_csv"])
         pairs = config["algorithm_pairs"]
         output_dir = Path(config["paths"]["output_root"])
     except KeyError as e:
