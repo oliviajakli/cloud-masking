@@ -1,13 +1,14 @@
+import logging
 from pathlib import Path
 import pandas as pd    # type: ignore
 import numpy as np   # type: ignore
-import logging
 
 from src.analysis.posthoc_tests import run_posthoc_wilcoxon, effect_size_cliffs_delta, bootstrap_cliffs_delta
 from src.utils.config import load_config
 from src.utils.io import save_analysis_results, validate_output_path_for_df
 from src.utils.logging import setup_logging
 from src.utils.validator import DataValidator
+
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,9 @@ def run(
     and calculate Cliff's Delta effect sizes with bootstrap CIs.
     Args:
         df (pd.DataFrame): DataFrame with algorithm results.
+        pairs (list[tuple[str, str]]): List of algorithm pairs for comparison.
+        random_seed (int): Random seed for reproducibility of bootstrap results.
+        output_dir (Path): Directory to save results.
     Returns:
         str: Message indicating where results are saved.
     """
@@ -47,6 +51,7 @@ def run(
     # Add effect size results to the posthoc dataframe.
     effect_size_df = pd.DataFrame(effect_size_results)
     logger.debug(f"Effect size results:\n{effect_size_df.head()}")
+    # Merge effect size results into posthoc_df based on algorithm pairs.
     posthoc_df = posthoc_df.merge(
         effect_size_df
         [['algorithm_a', 'algorithm_b', 'delta', 'effect_size', 'favors']],
@@ -76,11 +81,13 @@ def run(
     validate_output_path_for_df(out_path, posthoc_df)
     # Save results of post-hoc analysis to CSV.
     save_analysis_results(posthoc_df, out_path)
+
     logger.info("Post-hoc analysis completed and results saved.")
     return f"Post-hoc results saved to {out_path}"
 
 def cli() -> None:
     setup_logging()
+
     try:
         config = load_config()
     except FileNotFoundError as e:
@@ -89,21 +96,23 @@ def cli() -> None:
         raise SystemExit(f"Failed to load configuration: {e}")
 
     try:
-        input_data = Path(config["paths"]["input"])
+        input_data = Path(config["paths"]["metrics_csv"])
         pairs = config["algorithm_pairs"]
         random_seed = config["statistics"]["random_seed"]
-        output_dir = Path(config["paths"]["output_dir"])
+        output_dir = Path(config["paths"]["output_root"])
     except KeyError as e:
         raise SystemExit(f"Missing required configuration key: {e}")
     
     df = pd.read_csv(input_data)
 
+    # Light data validation before running post-hoc analysis.
     validator = DataValidator(
         required_columns=set(config["validation"]["required_columns"]),
         metric_columns=set(config["validation"]["metric_columns"]),
         expected_algorithms=set(pairs.keys())
     )
     validator.validate_light(df, context="post-hoc analysis")
+
     print(run(df, pairs, random_seed, output_dir))
 
 if __name__ == "__main__":

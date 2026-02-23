@@ -1,6 +1,6 @@
+import logging
 from pathlib import Path
 import pandas as pd   # type: ignore
-import logging
 
 from src.analysis.normality_check import compute_pairwise_differences, plot_normality, shapiro_wilk_test
 from src.utils.config import load_config
@@ -53,13 +53,16 @@ def run(df: pd.DataFrame,
     validate_output_path_for_df(shapiro_wilk_path, result_df)
     # Save results with user-friendly error handling.
     save_analysis_results(result_df, shapiro_wilk_path)
+
     logger.info("Generating plots for normality of pairwise differences.")
     plot_normality(diff_hy_s2, diff_hy_cs, diff_s2_cs, output_dir)
+
     logger.info("Pairwise analysis completed.")
     return "Pairwise analysis completed. Results saved to:", output_dir
 
 def cli() -> None:
     setup_logging()
+    
     try:
         config = load_config()
     except FileNotFoundError as e:
@@ -68,20 +71,23 @@ def cli() -> None:
         raise SystemExit(f"Failed to load configuration: {e}")
 
     try:
-        input_data = Path(config["paths"]["input"])
+        input_data = Path(config["paths"]["metrics_csv"])
         pairs = config["algorithm_pairs"]
-        output_dir = Path(config["paths"]["output_dir"])
+        output_dir = Path(config["paths"]["output_root"])
     except KeyError as e:
         raise SystemExit(f"Missing required configuration key: {e}")
     
     df = pd.read_csv(input_data)
 
+    # Light validation before running pairwise analysis to ensure 
+    # required columns and algorithms are present.
     validator = DataValidator(
         required_columns=set(config["validation"]["required_columns"]),
         metric_columns=set(config["validation"]["metric_columns"]),
         expected_algorithms=set(config["algorithms"])
     )
     validator.validate_light(df, context="pairwise analysis")
+    
     message, path = run(df, pairs, output_dir)
     print(message, path)
 
