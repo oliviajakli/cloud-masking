@@ -9,6 +9,7 @@ import rasterio  # type: ignore
 from sklearn.metrics import matthews_corrcoef  # type: ignore
 from tqdm import tqdm  # type: ignore
 
+
 logger = logging.getLogger(__name__)
 
 # Tile-based block bootstrap.
@@ -28,9 +29,11 @@ def list_scenes(gt_folder: Path, alg_folder: Path) -> list[str]:
         list[str]: Sorted list of common scene filenames.
     """
     logger.debug(f"Listing scenes in {gt_folder} and {alg_folder}.")
+
     gt_files = {os.path.basename(p): p for p in glob(os.path.join(gt_folder, "*.tif"))}
     alg_files = {os.path.basename(p): p for p in glob(os.path.join(alg_folder, "*.tif"))}
     common = sorted(set(gt_files.keys()).intersection(alg_files.keys()))
+
     logger.debug(f"Found common scenes: {common}")
     return common
 
@@ -42,8 +45,10 @@ def read_raster(path: Path) -> np.ndarray:
         np.ndarray: Array representation of the raster.
     """
     logger.debug(f"Reading raster file: {path}")
+
     with rasterio.open(path) as src:
         arr = src.read(1)
+
     logger.debug(f"Raster read successfully: {path}")
     return arr
 
@@ -57,6 +62,8 @@ def tile_array(arr: np.ndarray, tile_h: int, tile_w: int) -> list[np.ndarray]:
         list[np.ndarray]: List of 2D tiles.
     """
     logger.debug(f"Tiling array of shape {arr.shape} into tiles of size ({tile_h}, {tile_w}).")
+
+    # Validate input dimensions.
     if arr.ndim != 2:
         raise ValueError("Input array must be 2D.")
     
@@ -67,7 +74,9 @@ def tile_array(arr: np.ndarray, tile_h: int, tile_w: int) -> list[np.ndarray]:
             tile = arr[i:i+tile_h, j:j+tile_w]
             if tile.shape == (tile_h, tile_w):
                 tiles.append(tile)
+
     logger.debug(f"Total tiles created: {len(tiles)}")
+
     return tiles
 
 def safe_mcc(y_true: np.ndarray, y_pred: np.ndarray) -> float:
@@ -76,15 +85,21 @@ def safe_mcc(y_true: np.ndarray, y_pred: np.ndarray) -> float:
         y_true (np.ndarray): Ground truth binary labels.
         y_pred (np.ndarray): Predicted binary labels.
     Returns:
-        float: Matthews correlation coefficient or NaN if undefined.
+        float: Matthew's correlation coefficient or NaN if undefined.
     """
     logger.debug("Computing safe MCC.")
+
     y_true = (y_true > 0).astype(np.int8).ravel()
     y_pred = (y_pred > 0).astype(np.int8).ravel()
+
     logger.debug(f"y_true unique values: {np.unique(y_true)}, y_pred unique values: {np.unique(y_pred)}")
+    
+    # MCC is undefined if either array has only one class (all 0s or all 1s).
     if np.unique(y_true).size < 2 or np.unique(y_pred).size < 2:
         return np.nan
+    
     logger.info("Calculating MCC.")
+
     return matthews_corrcoef(y_true, y_pred)
 
 def mcc_per_tile(gt_arr: np.ndarray, pred_arr: np.ndarray, tile: int = 256) -> np.ndarray:
@@ -97,18 +112,24 @@ def mcc_per_tile(gt_arr: np.ndarray, pred_arr: np.ndarray, tile: int = 256) -> n
         np.ndarray: Array of MCC values per tile.
     """
     logger.debug("Computing MCC per tile.")
+
     gt_tiles = tile_array(gt_arr, tile, tile)
     pred_tiles = tile_array(pred_arr, tile, tile)
+
     mccs = []
+    # Compute MCC for each corresponding tile pair.
     for a, b in zip(gt_tiles, pred_tiles):
         mccs.append(safe_mcc(a, b))
+
     logger.debug(f"MCC per tile computed: {mccs}")
+
     return np.array(mccs)
 
 def bootstrap_scene_tiles(
     mcc_tiles: np.ndarray,
     B: int = 1000,
-    rng: np.random.Generator | None = None) -> np.ndarray:
+    rng: np.random.Generator | None = None
+    ) -> np.ndarray:
     """Bootstrap median MCC from tile-level MCCs for a single scene.
     Args:
         mcc_tiles (np.ndarray): Array of MCC values per tile for a scene.
@@ -118,23 +139,31 @@ def bootstrap_scene_tiles(
         np.ndarray: Array of bootstrapped median MCC values.
     """
     logger.info("Bootstrapping median MCC from tile-level MCCs.")
+
     vals = mcc_tiles[~np.isnan(mcc_tiles)]
+    # If there are no valid MCC values, return an array of NaNs.
     if vals.size == 0:
         return np.full(B, np.nan)
+    
     n = len(vals)
     boots = []
+    # Use the provided random generator if available, 
+    # otherwise fall back to numpy's default random choice.
     choice_fn = rng.choice if rng is not None else np.random.choice
     for _ in range(B):
         sample = choice_fn(vals, size=n, replace=True)
         boots.append(np.median(sample))
+
     logger.debug(f"Bootstrapped median MCCs: {boots}")
+    
     return np.array(boots)
 
 def compute_tile_mccs_all(
         gt_folder: Path, 
         alg_folder: Path, 
         scenes: list[str], 
-        tile: int = 256):
+        tile: int = 256
+    ) -> dict[str, np.ndarray]:
     """Compute tile-level MCCs for all algorithms and scenes.
     Args:
         gt_folder (Path): Path to ground truth folder.
@@ -142,24 +171,29 @@ def compute_tile_mccs_all(
         scenes (list[str]): List of scene filenames.
         tile (int): Tile size (assumed square).
     Returns:
-        dict[str, dict[str, np.ndarray]]: Nested dictionary of MCC arrays per scene per algorithm.
+        dict[str, np.ndarray]: Dictionary of MCC arrays per scene.
     """
     logger.info(f"Computing tile-level MCCs for all scenes in {alg_folder}.")
-    result = {}
+
+    result: dict[str, np.ndarray] = {}
     for s in tqdm(scenes, desc=f"Processing {os.path.basename(alg_folder)}"):
         gt = read_raster(Path(os.path.join(gt_folder, s)))
         pred = read_raster(Path(os.path.join(alg_folder, s)))
+        # Validate shapes before computing MCCs.
         if gt.shape != pred.shape:
             raise ValueError(f"Shape mismatch in {s}")
         result[s] = mcc_per_tile(gt, pred, tile=tile)
+
     logger.info(f"Completed computing tile-level MCCs for {alg_folder}.")
+
     return result
 
 def two_level_bootstrap(
         scene_tile_mccs: dict[str, dict[str, np.ndarray]], 
         B_scene: int = 1000, 
         B_global: int = 2000, 
-        seed: int = 0) -> tuple[pd.DataFrame, pd.DataFrame]:
+        seed: int = 0
+        ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Perform two-level bootstrap to compute global metrics and paired differences.
     Args:
         scene_tile_mccs (dict[str, dict[str, np.ndarray]]): Nested dictionary of MCC arrays per scene per algorithm.
@@ -170,15 +204,20 @@ def two_level_bootstrap(
         tuple[pd.DataFrame, pd.DataFrame]: DataFrames of bootstrapped global metrics and paired differences.
     """
     logger.info("Starting two-level bootstrap analysis.")
+
     rng = np.random.default_rng(seed)
     algs = list(scene_tile_mccs.keys())
+    # Scenes need to be sorted for consistent indexing.
     scenes = sorted(scene_tile_mccs[algs[0]].keys())
+
     logger.debug(f"Algorithms: {algs}, Scenes: {scenes}")
+    
     S = len(scenes)
 
     # Per-scene bootstrap for each algorithm (inner layer).
     scene_boots: dict[str, dict[str, np.ndarray]] = {alg: {} for alg in algs}
     for alg in algs:
+        # Validate that all algorithms have the same set of scenes.
         if set(scene_tile_mccs[alg].keys()) != set(scenes):
             raise ValueError("All algorithms must have identical scene sets.")
         if S == 0:
@@ -198,6 +237,7 @@ def two_level_bootstrap(
         for alg in algs:
             vals = [scene_boots[alg][scenes[i]][rng.integers(0, B_scene)] for i in idxs]
             alg_global[alg][b] = np.nanmedian(vals)
+
     logger.info("Completed two-level bootstrap analysis.")
 
     # Paired differences between algorithms.
@@ -206,7 +246,9 @@ def two_level_bootstrap(
         for j in range(i+1, len(algs)):
             a, bname = algs[i], algs[j]
             diffs[f"{a}_minus_{bname}"] = alg_global[a] - alg_global[bname]
+
     logger.info("Computed paired differences between algorithms.")
+
     return pd.DataFrame(alg_global), pd.DataFrame(diffs)
 
 def summarize(df: pd.DataFrame) -> pd.DataFrame:
@@ -217,10 +259,13 @@ def summarize(df: pd.DataFrame) -> pd.DataFrame:
         pd.DataFrame: Summary DataFrame with median and confidence intervals.
     """
     logger.info("Summarizing bootstrapped results.")
+
     rows = []
     for col in df.columns:
         med = np.nanmedian(df[col])
         low, high = np.nanpercentile(df[col], [2.5, 97.5])
         rows.append({"metric": col, "median": med, "ci_lower": low, "ci_upper": high})
+
     logger.debug(f"Summary rows: {rows}")
+
     return pd.DataFrame(rows)
