@@ -1,12 +1,14 @@
-from src.utils.plotting import save_figure
-
 import os
 import logging
+from pathlib import Path
+
 import pandas as pd     # type: ignore
 from scipy.stats import shapiro  # type: ignore
-from pathlib import Path
 import matplotlib.pyplot as plt # type: ignore
 import seaborn as sns   # type: ignore
+
+from src.utils.plotting import save_figure
+
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +91,8 @@ def plot_normality(
             color='steelblue', # Assign a color as hue is removed
             alpha=0.3
         )
-        # Add Kernel Density Estimate (KDE) to the histogram.
+        # Add Kernel Density Estimate (KDE) to the histogram 
+        # for better visualization of the distribution shape.
         sns.kdeplot(
             x=diff_series, # Pass the Series directly to x
             color='steelblue', # Assign a color as hue is removed
