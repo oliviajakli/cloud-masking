@@ -1,9 +1,11 @@
-from scipy.stats import wilcoxon    # type: ignore
-import statsmodels.stats.multitest as smm   # type: ignore
+import logging
+
 import pandas as pd     # type: ignore
 import numpy as np   # type: ignore
+from scipy.stats import wilcoxon    # type: ignore
+import statsmodels.stats.multitest as smm   # type: ignore
 from cliffs_delta import cliffs_delta   # type: ignore
-import logging
+
 
 logger = logging.getLogger(__name__)
 
@@ -16,10 +18,12 @@ def run_posthoc_wilcoxon(df: pd.DataFrame, pairs: list) -> pd.DataFrame:
         pd.DataFrame: DataFrame with pairwise comparison results.
     """
     logger.info("Running pairwise Wilcoxon signed-rank tests.")
+    
     # If results of Friedman test are significant, run pairwise Wilcoxon.
     pvals = []
     for (a, b) in pairs:
         logger.debug(f"Comparing {a} and {b}.")
+        # Validate input lengths and requirements.
         if len(df[a]) != len(df[b]):
             raise ValueError("Algorithms must have equal number of observations.")
         if np.all(df[a] - df[b] == 0):
@@ -35,16 +39,20 @@ def run_posthoc_wilcoxon(df: pd.DataFrame, pairs: list) -> pd.DataFrame:
     # which adaptively adjusts thresholds. More powerful and less conservative than 
     # plain Bonferroni, while still controlling for family-wise error rate.
     rej, p_corr, _, _ = smm.multipletests(pvals, alpha=0.05, method='holm')
+
     for (a, b), p_unc, p_c, r in zip(pairs, pvals, p_corr, rej):
         logger.info(f"{a} vs {b}: corrected p-value = {p_c:.4f}, reject = {r}")
+
     results_df = pd.DataFrame({
         'algorithm_pair': [f"{a} vs {b}" for (a, b) in pairs],
         'uncorrected_p_value': pvals,
         'corrected_p_value': p_corr,
         'reject_null': rej
     })
+
     logger.info("Pairwise Wilcoxon tests completed.")
     logger.debug(f"Pairwise Wilcoxon results:\n{results_df}")
+
     return results_df
 
 # Pairwise effect sizes with bootstrap CIs.
@@ -60,15 +68,18 @@ def effect_size_cliffs_delta(df: pd.DataFrame, pairs: list) -> list:
         list: List of dictionaries with effect size results for each pair.
     """
     logger.info("Calculating Cliff's Delta for pairwise comparisons.")
+
     results = []
     for (a, b) in pairs:
         logger.debug(f"Calculating Cliff's Delta for {a} and {b}.")
+        # Validate input lengths and requirements.
         if len(df[a]) != len(df[b]):
             raise ValueError("Algorithms must have equal number of observations.")
         if len(df[a]) < 2:
             raise ValueError("At least two paired observations required.")
 
         delta, magnitude = cliffs_delta(df[a], df[b])
+
         results.append({
             "algorithm_a": a,
             "algorithm_b": b,
@@ -77,10 +88,18 @@ def effect_size_cliffs_delta(df: pd.DataFrame, pairs: list) -> list:
             "favors": a if delta > 0 else b if delta < 0 else "Neither"
         })
         logger.info(f"{a} vs {b}: Cliff's Delta = {delta:.4f}, effect size = {magnitude}")
+
     logger.info("Cliff's Delta calculations completed.")
+
     return results
 
-def bootstrap_cliffs_delta(x: pd.Series, y: pd.Series, n_boot: int = 5000, ci: int = 95, random_state=None) -> tuple:
+def bootstrap_cliffs_delta(
+        x: pd.Series, 
+        y: pd.Series, 
+        n_boot: int = 5000, 
+        ci: int = 95, 
+        random_state=None
+        ) -> tuple:
     """
     Calculate Cliff's Delta for all pairwise comparisons among algorithms,
     bootstrap CI, and full distribution. x, y should be 1D numpy arrays of
@@ -90,6 +109,7 @@ def bootstrap_cliffs_delta(x: pd.Series, y: pd.Series, n_boot: int = 5000, ci: i
         y (pd.Series): Results for algorithm y.
         n_boot (int): Number of bootstrap samples.
         ci (int): Confidence interval percentage.
+        random_state: Random seed for reproducibility.
     Returns:
         tuple: Lower and upper bounds of the confidence interval.
     """
@@ -111,9 +131,12 @@ def bootstrap_cliffs_delta(x: pd.Series, y: pd.Series, n_boot: int = 5000, ci: i
         y_boot = y_np[indices]
         delta, _ = cliffs_delta(x_boot, y_boot)
         boot_deltas.append(delta)
+
     # Build confidence intervals.
     alpha = (100 - ci) / 2
     lower = np.percentile(boot_deltas, alpha)
     upper = np.percentile(boot_deltas, 100 - alpha)
+
     logger.info(f"Bootstrap CI for Cliff's Delta: {ci}% CI = [{lower:.4f}, {upper:.4f}]")
+
     return lower, upper
