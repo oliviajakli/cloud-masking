@@ -1,7 +1,7 @@
 import logging
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import matplotlib.pyplot as plt  # type: ignore
 import numpy as np  # type: ignore
@@ -13,6 +13,7 @@ from src.utils.plotting import save_figure
 
 logger = logging.getLogger(__name__)
 
+
 def compute_precision_recall_diff(df: pd.DataFrame) -> pd.DataFrame:
     """
     Adds a column: pr_diff = precision - recall.
@@ -23,8 +24,10 @@ def compute_precision_recall_diff(df: pd.DataFrame) -> pd.DataFrame:
         pd.DataFrame: DataFrame with added 'pr_diff' column.
     """
     logger.info("Computing precision-recall differences.")
+    
     df = df.copy()
     df["pr_diff"] = (df["precision"] - df["recall"]).round(10)
+
     logger.debug(f"Computed pr_diff for {len(df)} records.")
     return df
 
@@ -32,7 +35,8 @@ def bootstrap_median_ci(
         x: np.ndarray, 
         n_boot: int = 5000, 
         ci: int = 95, 
-        random_state: int = 42) -> tuple[Any, Any, Any]:
+        random_state: int = 42
+        ) -> tuple[Any, Any, Any]:
     """Computes bootstrap confidence interval for the median of x.
     Args:
         x (np.ndarray): Input data array.
@@ -43,6 +47,7 @@ def bootstrap_median_ci(
         tuple[float, float, float]: Median, lower CI bound, upper CI bound.
     """
     logger.info("Computing bootstrap median and confidence interval.")
+
     rng = np.random.default_rng(random_state)
     x = np.asarray(x)
     x = x[~np.isnan(x)]
@@ -57,10 +62,12 @@ def bootstrap_median_ci(
     alpha = (100 - ci) / 2
     lower = np.percentile(boot_medians, alpha)
     upper = np.percentile(boot_medians, 100 - alpha)
+
     logger.debug(f"Bootstrap median: {np.median(x)}, CI: ({lower}, {upper})")
+    
     return np.median(x), lower, upper
 
-def wilcoxon_vs_zero(x: np.ndarray) -> Any:
+def wilcoxon_vs_zero(x: np.ndarray) -> float:
     """Performs Wilcoxon signed-rank test against zero.
     Args:
         x (np.ndarray): Input data array.
@@ -68,6 +75,7 @@ def wilcoxon_vs_zero(x: np.ndarray) -> Any:
         float: p-value from the Wilcoxon test.
     """
     logger.info("Performing Wilcoxon signed-rank test against zero.")
+
     x = np.asarray(x)
     x = x[~np.isnan(x)]
 
@@ -77,19 +85,21 @@ def wilcoxon_vs_zero(x: np.ndarray) -> Any:
     if len(x) < 2:
         raise ValueError("At least two non-NaN values are required for Wilcoxon test.")
 
-    stat, p = wilcoxon(x, zero_method="wilcox", alternative="two-sided")
+    stat, p = cast(tuple[float, float], wilcoxon(x, zero_method="wilcox", alternative="two-sided"))
+
     logger.debug(f"Wilcoxon test statistic: {stat}, p-value: {p}")
+
     return p
 
-def summary_table(df: pd.DataFrame, ci: int = 95) -> pd.DataFrame:
+def summary_table(df: pd.DataFrame) -> pd.DataFrame:
     """Computes summary statistics for each algorithm in the dataframe.
     Args:
         df (pd.DataFrame): Input dataframe with 'pr_diff' column.
-        ci (int): Confidence interval percentage.
     Returns:
         pd.DataFrame: Summary statistics dataframe.
     """
     logger.info("Generating summary table for directional error analysis.")
+
     required = {"algorithm", "pr_diff"}
     missing = required - set(df.columns)
     if missing:
@@ -112,6 +122,7 @@ def summary_table(df: pd.DataFrame, ci: int = 95) -> pd.DataFrame:
         })
 
     summary_df = pd.DataFrame(summary_rows)
+
     logger.debug(f"Summary DataFrame:\n{summary_df}")
     return summary_df
 
@@ -124,6 +135,7 @@ def plot_directional_bias(df: pd.DataFrame, output_dir: Path) -> None:
         None
     """
     logger.info("Generating directional bias violin plot.")
+
     plt.figure(figsize=(9, 5))
 
     sns.violinplot(
@@ -151,4 +163,5 @@ def plot_directional_bias(df: pd.DataFrame, output_dir: Path) -> None:
 
     fig_path = os.path.join(output_dir, "directional_bias", "directional_bias_violinplot.png")
     save_figure(plt.gcf(), Path(fig_path))
+
     logger.info(f"Saved directional bias plot to {fig_path}.")
