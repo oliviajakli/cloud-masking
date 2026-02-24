@@ -1,5 +1,5 @@
-from pathlib import Path
 import logging
+from pathlib import Path
 import pandas as pd # type: ignore
 
 from src.analysis.exploratory_plots import (compute_descriptive_stats, plot_distributions, 
@@ -43,7 +43,7 @@ def run(
     # Validate with actual size before saving.
     validate_output_path_for_df(output_dir, summary_df)
     # Save descriptive statistics summary to CSV with user-friendly error handling.
-    save_analysis_results(summary_df.reset_index(), Path(f"{output_dir}/metrics_summary.csv"))
+    save_analysis_results(summary_df.reset_index(), Path(f"{output_dir}/descriptives/metrics_summary.csv"))
     logger.info("Descriptive statistics summary saved.")
     # Histogram with KDE plots for each metric and algorithm.
     plot_distributions(df, metrics, Path(f"{output_dir}/descriptives"))
