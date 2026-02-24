@@ -61,12 +61,12 @@ class DataValidator:
                 f"Missing required columns {missing}{self._ctx(context)}"
             )
 
-    def _validate_algorithms(
-        self, df: pd.DataFrame, *, strict: bool, context: str
-    ):
+    def _validate_algorithms(self, df: pd.DataFrame, *, strict: bool, context: str):
         if self.expected_algorithms is None:
             return
-
+        if "algorithm" not in df.columns:
+            raise ValueError(f"Missing 'algorithm' column{self._ctx(context)}")
+        
         observed = set(df["algorithm"].dropna().unique())
         unexpected = observed - self.expected_algorithms
 
@@ -91,6 +91,9 @@ class DataValidator:
             )
 
     def _validate_metrics_strict(self, df: pd.DataFrame, context: str):
+        missing = self.metric_columns - set(df.columns)
+        if missing:
+            raise ValueError(f"Missing metric columns {missing}{self._ctx(context)}")
         metrics = df[list(self.metric_columns)]
 
         if not np.isfinite(metrics.to_numpy()).all():
