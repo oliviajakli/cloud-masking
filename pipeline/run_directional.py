@@ -1,6 +1,6 @@
+import logging
 from pathlib import Path
 import pandas as pd   # type: ignore
-import logging
 
 from src.analysis.directional_error import (
     compute_precision_recall_diff,
@@ -38,7 +38,9 @@ def run(df: pd.DataFrame, output_dir: Path) -> tuple[str, Path]:
     logger.info(f"Generated and saved summary table to {summary_path}.")
     # Generate and save plots for directional bias.
     plot_directional_bias(df, output_dir)
+
     logger.info("Generated directional bias plots.")
+
     return "Directional analysis completed. Results saved to:", output_dir
 
 def cli():
@@ -58,12 +60,14 @@ def cli():
         raise SystemExit(f"Missing required configuration key: {e}")
 
     df = pd.read_csv(input_data)
+
     validator = DataValidator(
         required_columns=set(config["validation"]["required_columns"]),
         metric_columns=set(config["validation"]["metric_columns"]),
         expected_algorithms=set(config["algorithm_pairs"].keys())
     )
     validator.validate_light(df, context="directional analysis")
+
     message, path = run(df, output_dir)
     print(message, path)
 
