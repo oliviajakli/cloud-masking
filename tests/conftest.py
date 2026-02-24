@@ -1,8 +1,10 @@
-import numpy as np
-import rasterio
-from rasterio.transform import from_origin
 import pytest
-import pandas as pd     # type: ignore
+import numpy as np
+import rasterio     # type: ignore
+from rasterio.transform import from_origin  # type: ignore
+import pandas as pd
+
+from src.utils.validator import DataValidator     # type: ignore
 
 @pytest.fixture
 def sample_metrics_df():
@@ -51,3 +53,24 @@ def write_raster():
         ) as dst:
             dst.write(arr, 1)
     return _write
+
+@pytest.fixture
+def valid_df():
+    return pd.DataFrame({
+        "algorithm": ["A", "B"],
+        "scene_id": [1, 1],
+        "precision": [0.8, 0.9],
+        "recall": [0.7, 0.85],
+    })
+
+@pytest.fixture
+def validator():
+    return DataValidator(
+        required_columns={"algorithm", "scene_id", "precision", "recall"},
+        metric_columns={"precision", "recall"},
+        expected_algorithms={"A", "B"},
+        value_constraints={
+            "precision": lambda s: s.between(0, 1),
+            "recall": lambda s: s.between(0, 1),
+        }
+    )
