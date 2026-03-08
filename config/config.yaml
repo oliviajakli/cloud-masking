@@ -1,4 +1,6 @@
 paths:
+  gdrive_project_root: /content/gdrive/My Drive/Sandusky
+  iris_root: /content/gdrive/My Drive/IRIS
   metrics_csv: data/per_scene_evaluation_metrics.csv
   output_root: results
   figures_dir: results/figures
@@ -51,3 +53,15 @@ validation:
     - iou
     - mcc
     - cloud_fraction
+
+# Thresholds and parameters for cloud masking algorithms. 
+# These can be adjusted to optimize performance.
+thresholds:
+  cloud_filter: 90
+  hybrid: 60
+  s2cloudless:
+    cloud_probability: 40
+    nir_darkness: 0.15
+    cloud_projection_distance: 1
+    buffer: 50
+  cloudscoreplus: 0.64
