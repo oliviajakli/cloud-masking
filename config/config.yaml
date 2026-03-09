@@ -1,6 +1,4 @@
 paths:
-  gdrive_project_root: /content/gdrive/My Drive/Sandusky
-  iris_root: /content/gdrive/My Drive/IRIS
   metrics_csv: data/per_scene_evaluation_metrics.csv
   output_root: results
   figures_dir: results/figures
