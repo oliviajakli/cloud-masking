@@ -3,7 +3,7 @@ import pytest
 
 from src.analysis.descriptive_stats import compute_descriptive_stats
 
-# Unit tests for compute_descriptive_stats.
+# --- Unit tests for compute_descriptive_stats.---
 
 # Test correct schema of output DataFrame.
 def test_descriptive_stats_schema(sample_metrics_df: pd.DataFrame):

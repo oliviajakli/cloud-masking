@@ -6,7 +6,9 @@ import pytest
 from src.analysis.evaluation import compute_metrics, plot_confusion_matrix
 
 
-# Unit tests for compute_metrics.
+# --- Unit tests for compute_metrics.---
+
+# Test that the output DataFrame has the expected columns.
 def test_compute_metrics_columns(tmp_path, write_raster):
     masks_dir = tmp_path / "masks"
     ref_dir = masks_dir / "reference"
@@ -30,7 +32,7 @@ def test_compute_metrics_columns(tmp_path, write_raster):
 
     assert set(df.columns) == expected_cols
 
-
+# Test that confusion counts are computed correctly for a simple case.
 def test_compute_metrics_confusion_counts(tmp_path, write_raster):
     masks_dir = tmp_path / "masks"
     ref_dir = masks_dir / "reference"
@@ -52,6 +54,7 @@ def test_compute_metrics_confusion_counts(tmp_path, write_raster):
     assert row.FP == 0
     assert row.FN == 1
 
+# Test that cloud fraction is computed correctly for a simple case.
 def test_cloud_fraction(tmp_path, write_raster):
     # TP=1, FP=1, TN=1, FN=1 → cloud_fraction = 0.5
     masks_dir = tmp_path / "masks"
@@ -70,6 +73,7 @@ def test_cloud_fraction(tmp_path, write_raster):
     row = df.iloc[0]
     assert np.isclose(row.cloud_fraction, 0.5)
 
+# Test that non-TIF files are ignored and do not cause errors.
 def test_non_tif_files_skipped(tmp_path):
     masks_dir = tmp_path / "masks"
     ref_dir = masks_dir / "reference"
@@ -84,6 +88,7 @@ def test_non_tif_files_skipped(tmp_path):
 
     assert df.empty
 
+# Test that missing algorithm folder raises an error.
 def test_empty_algorithm_folder_raises(tmp_path):
     masks_dir = tmp_path / "masks"
     (masks_dir / "reference").mkdir(parents=True)
@@ -92,17 +97,21 @@ def test_empty_algorithm_folder_raises(tmp_path):
     with pytest.raises(FileNotFoundError):
         compute_metrics(masks_dir)
 
-# Unit tests for plot_confusion_matrix.
+# --- Unit tests for plot_confusion_matrix.---
+
+# Test that invalid shape raises an error.
 def test_plot_confusion_matrix_invalid_shape():
     cm = np.zeros((3, 3))
     with pytest.raises(ValueError):
         plot_confusion_matrix(cm, "Invalid")
 
+# Test that empty confusion matrix raises an error.
 def test_plot_confusion_matrix_empty():
     cm = np.zeros((2, 2))
     with pytest.raises(ValueError):
         plot_confusion_matrix(cm, "Empty")
 
+# Test that plot_confusion_matrix calls save_figure with expected filename.
 @patch("src.evaluation.save_figure")
 def test_plot_confusion_matrix_saves(mock_save):
     cm = np.array([[5, 1], [2, 7]])

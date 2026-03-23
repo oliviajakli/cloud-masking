@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 import numpy as np
 
-# Unit tests and smoke tests for distribution plots and exploratory visuals.
+# --- Unit tests and smoke tests for distribution plots and exploratory visuals.---
 
 # Test ValueError raised when metrics are missing.
 def test_plot_distributions_missing_metric(sample_metrics_df):
