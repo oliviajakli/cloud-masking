@@ -1,15 +1,22 @@
 import logging
 from pathlib import Path
-import pandas as pd # type: ignore
 
-from src.analysis.exploratory_plots import (compute_descriptive_stats, plot_distributions, 
-    plot_boxplots_with_stats,plot_paired_differences, plot_bland_altman, plot_error_maps,
-    plot_scatterplot, plot_time_series)
-from src.utils.validator import DataValidator
+import pandas as pd  # type: ignore
+
+from src.analysis.exploratory_plots import (
+    compute_descriptive_stats,
+    plot_bland_altman,
+    plot_boxplots_with_stats,
+    plot_distributions,
+    plot_error_maps,
+    plot_paired_differences,
+    plot_scatterplot,
+    plot_time_series,
+)
 from src.utils.config import load_config
-from src.utils.io import save_analysis_results, validate_output_path_for_df
-from src.utils.logging import setup_logging   # type: ignore
-
+from src.utils.io import save_analysis_results
+from src.utils.logging import setup_logging  # type: ignore
+from src.utils.validator import DataValidator
 
 logger = logging.getLogger(__name__)
 
@@ -40,8 +47,6 @@ def run(
     logger.debug(f"Input DataFrame head:\n{df.head()}")
     # Compute cumulative median, mean, and std dev for each algorithm and metric.
     summary_df = compute_descriptive_stats(df, metrics)
-    # Validate with actual size before saving.
-    validate_output_path_for_df(output_dir, summary_df)
     # Save descriptive statistics summary to CSV with user-friendly error handling.
     save_analysis_results(summary_df.reset_index(), Path(f"{output_dir}/descriptives/metrics_summary.csv"))
     logger.info("Descriptive statistics summary saved.")

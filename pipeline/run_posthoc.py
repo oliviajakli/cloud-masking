@@ -1,14 +1,18 @@
 import logging
 from pathlib import Path
-import pandas as pd    # type: ignore
-import numpy as np   # type: ignore
 
-from src.analysis.posthoc_tests import run_posthoc_wilcoxon, effect_size_cliffs_delta, bootstrap_cliffs_delta
+import numpy as np  # type: ignore
+import pandas as pd  # type: ignore
+
+from src.analysis.posthoc_tests import (
+    bootstrap_cliffs_delta,
+    effect_size_cliffs_delta,
+    run_posthoc_wilcoxon,
+)
 from src.utils.config import load_config
-from src.utils.io import save_analysis_results, validate_output_path_for_df
+from src.utils.io import save_analysis_results
 from src.utils.logging import setup_logging
 from src.utils.validator import DataValidator
-
 
 logger = logging.getLogger(__name__)
 
@@ -77,8 +81,6 @@ def run(
             "ci_upper"
         ] = ci_upper
 
-    # Validate output path and save results
-    validate_output_path_for_df(out_path, posthoc_df)
     # Save results of post-hoc analysis to CSV.
     save_analysis_results(posthoc_df, out_path)
 
