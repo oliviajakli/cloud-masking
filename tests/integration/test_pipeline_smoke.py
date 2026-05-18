@@ -6,8 +6,8 @@ from pipeline.runner import run_pipeline
 def test_full_pipeline(tmp_path, mocker):
     fake_config = {
         "paths": {
-            "input": str(tmp_path / "input.csv"),
-            "output_dir": str(tmp_path),
+            "metrics_csv": str(tmp_path / "input.csv"),
+            "output_root": str(tmp_path),
         },
         "algorithm_pairs": {"A": ["B"]},
         "validation": {
