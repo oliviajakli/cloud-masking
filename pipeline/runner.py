@@ -39,8 +39,8 @@ def run_pipeline() -> None:
     stats_cfg = config.get("statistics", {})
     bootstrap_cfg = config.get("bootstrap", {})
 
-    input_path = _resolve_path(paths_cfg["input"])
-    output_dir = _resolve_path(paths_cfg["output_dir"])
+    input_path = _resolve_path(paths_cfg["metrics_csv"])
+    output_dir = _resolve_path(paths_cfg["output_root"])
     metrics = config.get("metrics", validation_cfg.get("metric_columns", []))
     raw_pairs = config["algorithm_pairs"]
     pairs = raw_pairs if isinstance(raw_pairs, list) else [
@@ -52,7 +52,7 @@ def run_pipeline() -> None:
     algorithms = config.get("algorithms", list({alg for pair in pairs for alg in pair}))
     masks_dir = _resolve_path(paths_cfg.get("masks_dir", "data/masks"))
     reference_masks_dir = _resolve_path(paths_cfg.get("reference_masks_dir", "data/masks/reference"))
-    data_dir = _resolve_path(paths_cfg.get("data", paths_cfg.get("data_root", paths_cfg["output_dir"])))
+    data_dir = _resolve_path(paths_cfg.get("data", paths_cfg.get("data_root", paths_cfg["output_root"])))
     random_seed = config.get("random_seed", stats_cfg.get("random_seed", 42))
     tile_size = config.get("tile_size", bootstrap_cfg.get("tile_size", 256))
     b_scene = config.get("b_scene", bootstrap_cfg.get("b_scene", 1000))
@@ -62,20 +62,21 @@ def run_pipeline() -> None:
         's2cloudless': Path(f"{data_dir}/masks/s2cloudless"),
         'cloudscoreplus': Path(f"{data_dir}/masks/cloudscoreplus")
     }
-    
-
-    df = pd.read_csv(input_path)
 
     validator = DataValidator(
         required_columns=set(config["validation"]["required_columns"]),
         metric_columns=set(config["validation"]["metric_columns"]),
         expected_algorithms=set(algorithms)
     )
+    
+    # Run evaluation to generate metrics CSV if it doesn't exist, then load it for analysis.
+    run_evaluation(algorithms, masks_dir, reference_masks_dir, input_path, validator)
+
+    df = pd.read_csv(input_path)
 
     validator.validate_light(df, context="Full pipeline")
 
     # Run all analyses
-    run_evaluation(algorithms, masks_dir, reference_masks_dir, data_dir, validator)
     run_exploratory(df, metrics, pairs, algorithms, samples, reference_masks_dir, config, output_dir)
     run_normality_tests(df, pairs, output_dir)
     run_friedman(df, output_dir)
