@@ -1,12 +1,13 @@
-from pathlib import Path
-import os
-import tempfile
-import shutil
-import rasterio  # type: ignore
-import pandas as pd     # type: ignore
-import numpy as np    # type: ignore
 import logging
+import os
+import shutil
+import tempfile
 from datetime import datetime
+from pathlib import Path
+
+import numpy as np  # type: ignore
+import pandas as pd  # type: ignore
+import rasterio  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +86,7 @@ def validate_output_path(filepath: Path, required_space_mb:float=100.0):
     
     # Warn if file already exists (optional - you might want to allow overwriting)
     if path.exists():
-        logger.warning(f"⚠ Warning: {filepath} already exists and will be overwritten.")
+        logger.warning(f"Warning: {filepath} already exists and will be overwritten.")
     
     return True
 
@@ -148,18 +149,21 @@ def save_dataframe(df: pd.DataFrame, filepath: Path):
         ) from e
 
 # For user-facing analysis results.
-def save_analysis_results(df: pd.DataFrame, filepath: Path):
+def save_analysis_results(df: pd.DataFrame, filepath: Path, buffer_mb:int=20):
     """Save analysis results DataFrame to CSV with user-friendly error handling.
     Args:
         df: DataFrame to save
         filepath: Path to save CSV file
+        buffer_mb: Additional buffer space in MB used for path validation.
     Raises:
         RuntimeError: If saving fails due to permission or disk space issues.
     """
     ensure_dir(filepath.parent)
+    # Validate writeability and available space using the actual dataframe size.
+    validate_output_path_for_df(filepath, df, buffer_mb=buffer_mb)
     try:
         df.to_csv(filepath, index=False)
-        logger.info(f"✓ Results saved to {filepath}")
+        logger.info(f"Results saved to {filepath}")
         
     except PermissionError:
         raise RuntimeError(
