@@ -1,17 +1,17 @@
 import logging
 from pathlib import Path
-import pandas as pd   # type: ignore
+
+import pandas as pd  # type: ignore
 
 from src.analysis.directional_error import (
     compute_precision_recall_diff,
+    plot_directional_bias,
     summary_table,
-    plot_directional_bias
 )
 from src.utils.config import load_config
+from src.utils.io import save_analysis_results
 from src.utils.logging import setup_logging
 from src.utils.validator import DataValidator
-from src.utils.io import save_analysis_results, validate_output_path_for_df
-
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +31,6 @@ def run(df: pd.DataFrame, output_dir: Path) -> tuple[str, Path]:
     # Generate summary table and save to CSV.
     summary_df = summary_table(df)
     summary_path = Path(f"{output_dir}/directional_bias/directional_error_summary.csv")
-    # Validate output path before saving.
-    validate_output_path_for_df(summary_path, summary_df)
     # Save results of summary table as CSV.
     save_analysis_results(summary_df, summary_path)
     logger.info(f"Generated and saved summary table to {summary_path}.")

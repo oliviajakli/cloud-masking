@@ -1,13 +1,17 @@
 import logging
 from pathlib import Path
-import pandas as pd   # type: ignore
 
-from src.analysis.normality_check import compute_pairwise_differences, plot_normality, shapiro_wilk_test
+import pandas as pd  # type: ignore
+
+from src.analysis.normality_check import (
+    compute_pairwise_differences,
+    plot_normality,
+    shapiro_wilk_test,
+)
 from src.utils.config import load_config
+from src.utils.io import save_analysis_results, save_csv
 from src.utils.logging import setup_logging
 from src.utils.validator import DataValidator
-from src.utils.io import save_analysis_results, save_csv, validate_output_path_for_df
-
 
 logger = logging.getLogger(__name__)
 
@@ -49,8 +53,6 @@ def run(df: pd.DataFrame,
     result_df = shapiro_wilk_test(pairs, diff_hy_s2, diff_hy_cs, diff_s2_cs)
     # Save normality test results as CSV.
     shapiro_wilk_path = Path(f"{output_dir}/hypothesis/shapiro_wilk.csv")
-    # Validate output path before saving.
-    validate_output_path_for_df(shapiro_wilk_path, result_df)
     # Save results with user-friendly error handling.
     save_analysis_results(result_df, shapiro_wilk_path)
 

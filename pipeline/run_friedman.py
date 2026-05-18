@@ -1,13 +1,13 @@
 import logging
 from pathlib import Path
-import pandas as pd     # type: ignore
+
+import pandas as pd  # type: ignore
 
 from src.analysis.friedman import run_friedman_test
 from src.utils.config import load_config
+from src.utils.io import save_analysis_results
 from src.utils.logging import setup_logging
 from src.utils.validator import DataValidator
-from src.utils.io import validate_output_path_for_df, save_analysis_results
-
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +25,6 @@ def run(df: pd.DataFrame, output_dir: Path) -> tuple[str, Path]:
     output_path = Path(f"{output_dir}/hypothesis/friedman_test_results.csv")
     # Run Friedman test.
     result_df = run_friedman_test(df)
-    # Validate output path before saving.
-    validate_output_path_for_df(output_path, result_df)
     # Save results with user-friendly error handling.
     save_analysis_results(result_df, output_path)
     logger.info("Friedman test analysis completed.")
