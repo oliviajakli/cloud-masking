@@ -95,3 +95,171 @@ Bootstrap design:
 - 2,000 global paired resamples across scenes
 
 Median MCC was used as the primary bootstrap statistic because it is more robust to outlier scenes and heterogeneous cloud conditions than the mean.
+
+## Results
+The analysis consistently identified the following ranking: Cloud Score+ > s2cloudless > Hybrid
+
+Bootstrapped median MCC:
+
+| Algorithm | Median MCC | 95% CI |
+| ----------- | ----------- | ----------- |
+| Hybrid | 0.323 | 0.207 – 0.402 |
+| s2cloudless | 0.402 | 0.261 – 0.451 |
+| Cloud Score+ | 0.539 | 0.330 – 0.605 |
+
+## Reproducibility
+The statistical analysis pipeline in this repository is fully reproducible using the included configuration files, algorithm output masks, and reference masks.
+Reference (ground-truth) cloud masks were manually generated using the [IRIS](https://github.com/ESA-PhiLab/iris/tree/master#) software package through expert visual interpretation of satellite imagery. Because this process involves human annotation and interactive labeling decisions, the exact mask-generation process is not fully reproducible programmatically.
+To support reproducibility of the downstream analysis, all finalized reference masks and algorithm-generated masks used in the study are included in this repository.
+
+### Environment
+It is recommended to do this inside a virtual environment.
+
+- Python 3.12.5
+- Key dependencies listed in `requirements.txt`
+
+Environment Setup
+1. Clone the repository
+2. Configure paths and parameters in ‘config/config.yaml’
+3. Execute ‘runner.py’ to reproduce all analyses and figures
+
+Running:
+
+python -m pipeline.runner or python pipeline/runner.py
+
+will reproduce:
+- Evaluation metrics
+- Descriptive statistics
+- Bootstrap confidence intervals
+- Friedman test results
+- Post-hoc comparisons
+- Effect sizes
+- Exploratory figures
+- Final analysis plots
+
+<br>
+
+>git clone git@github.com:oliviajakli/cloud-masking.git\
+cd pipeline\
+pip install -r requirements.txt\
+python -m runner **or** python runner.py
+
+### Cloud Score+
+Cloud Score+ achieved the strongest overall performance across nearly all analyses:
+- Highest median MCC
+- Highest median F1-score
+- Highest median IoU
+- Lowest variability across scenes
+
+This algorithm demonstrated strong agreement with the reference masks while maintaining a relatively balanced tradeoff between cloud omission and cloud commission errors.
+
+### s2cloudless
+s2cloudless performed consistently well and closely trailed Cloud Score+.
+
+Strengths included:
+- Reliable cloud detection
+- Strong performance in heavily cloudy scenes
+- Conservative cloud removal behavior
+
+However, it tended to aggressively mask clouds, producing more false positives and reducing usable image area.
+
+### Hybrid method
+The hybrid Sen2Cor-based method showed the weakest and least stable performance.
+
+Observed weaknesses included:
+- Failure to detect thin and sparse clouds
+- Poor cloud shadow detection
+- High variability between scenes
+- Multiple catastrophic failures in low-cloud conditions
+
+Although it occasionally performed adequately under simple cloudy conditions, it was not sufficiently robust for operational freshwater remote sensing workflows.
+
+## Limitations
+Several important limitations should be considered when interpreting these results.
+
+### Imperfect Reference Masks
+Ground-truth masks were generated through human interpretation with AI assistance using IRIS. Although carefully created, they still contain uncertainty and labeling errors, especially around:
+- Bright reflective surfaces
+- Thin cloud boundaries
+- Water reflections
+- Mixed pixels
+
+These imperfections likely contributed to some disagreement between algorithms and reference data.
+
+### Limited Spatial and Temporal Scope
+The study focused exclusively on:
+- One geographic region (Sandusky Bay, Ohio)
+- 15 scenes
+- Selected months between 2020–2025
+
+As a result, conclusions may not fully generalize to:
+- Other climates
+- Different land-cover types
+- Snow/ice environments
+- Tropical cloud regimes
+
+### Binary Classification Only
+Cloud detection was treated as a binary problem:
+- cloud
+- clear
+
+More detailed semantic classes such as:
+- cloud shadow
+- thin cloud
+- cirrus cloud
+- haze
+
+were not evaluated separately.
+
+### Limited Hyperparameter Tuning
+Only one threshold configuration was tested for each algorithm.
+
+Additional tuning of:
+- cloud probability thresholds
+- cloud buffers
+- shadow projection distances
+- NIR thresholds
+
+could potentially improve performance.
+
+## Future Work
+Several extensions could improve the robustness and applicability of this research.
+
+### Improve Reference Mask Quality
+Future studies could refine IRIS-generated masks through:
+- additional manual correction
+- multi-annotator validation
+- integration with benchmark datasets such as CloudSEN12+
+
+Improved ground truth would reduce uncertainty in evaluation metrics.
+
+### Expand Geographic and Temporal Coverage
+Future work should include:
+- multiple freshwater systems
+- different climate regions
+- additional seasons
+- larger sample sizes
+
+### Multi-class Cloud Segmentation
+Extending the analysis beyond binary classification would allow more detailed evaluation of:
+- cloud shadows
+- cirrus clouds
+- thin haze
+- thick opaque clouds
+
+This would better reflect real-world atmospheric complexity.
+
+### Hyperparameter Optimization
+Algorithm-specific thresholds and parameters should be systematically optimized for different downstream applications such as:
+- water-quality retrieval
+- vegetation monitoring
+- land-cover mapping
+- composite image generation
+
+### Composite Image Analysis
+A future extension could evaluate the impact of cloud masking quality on downstream composite imagery products and environmental monitoring workflows, especially for harmful algal bloom detection and freshwater quality assessment.
+
+## Citation
+If you use this code or methodology, please cite:
+
+Olivia Jákli, 2026. *Examining the effect of cloud masking algorithms on remote sensing data accuracy and processing to improve water quality in Sandusky Bay, Ohio*.
