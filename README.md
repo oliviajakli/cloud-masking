@@ -107,6 +107,36 @@ Bootstrapped median MCC:
 | s2cloudless | 0.402 | 0.261 – 0.451 |
 | Cloud Score+ | 0.539 | 0.330 – 0.605 |
 
+### Cloud Score+
+Cloud Score+ achieved the strongest overall performance across nearly all analyses:
+- Highest median MCC
+- Highest median F1-score
+- Highest median IoU
+- Lowest variability across scenes
+
+This algorithm demonstrated strong agreement with the reference masks while maintaining a relatively balanced tradeoff between cloud omission and cloud commission errors.
+
+### s2cloudless
+s2cloudless performed consistently well and closely trailed Cloud Score+.
+
+Strengths included:
+- Reliable cloud detection
+- Strong performance in heavily cloudy scenes
+- Conservative cloud removal behavior
+
+However, it tended to aggressively mask clouds, producing more false positives and reducing usable image area.
+
+### Hybrid method
+The hybrid Sen2Cor-based method showed the weakest and least stable performance.
+
+Observed weaknesses included:
+- Failure to detect thin and sparse clouds
+- Poor cloud shadow detection
+- High variability between scenes
+- Multiple catastrophic failures in low-cloud conditions
+
+Although it occasionally performed adequately under simple cloudy conditions, it was not sufficiently robust for operational freshwater remote sensing workflows.
+
 ## Reproducibility
 The statistical analysis pipeline in this repository is fully reproducible using the included configuration files, algorithm output masks, and reference masks.
 Reference (ground-truth) cloud masks were manually generated using the [IRIS](https://github.com/ESA-PhiLab/iris/tree/master#) software package through expert visual interpretation of satellite imagery. Because this process involves human annotation and interactive labeling decisions, the exact mask-generation process is not fully reproducible programmatically.
@@ -143,36 +173,6 @@ will reproduce:
 cd pipeline\
 pip install -r requirements.txt\
 python -m runner **or** python runner.py
-
-### Cloud Score+
-Cloud Score+ achieved the strongest overall performance across nearly all analyses:
-- Highest median MCC
-- Highest median F1-score
-- Highest median IoU
-- Lowest variability across scenes
-
-This algorithm demonstrated strong agreement with the reference masks while maintaining a relatively balanced tradeoff between cloud omission and cloud commission errors.
-
-### s2cloudless
-s2cloudless performed consistently well and closely trailed Cloud Score+.
-
-Strengths included:
-- Reliable cloud detection
-- Strong performance in heavily cloudy scenes
-- Conservative cloud removal behavior
-
-However, it tended to aggressively mask clouds, producing more false positives and reducing usable image area.
-
-### Hybrid method
-The hybrid Sen2Cor-based method showed the weakest and least stable performance.
-
-Observed weaknesses included:
-- Failure to detect thin and sparse clouds
-- Poor cloud shadow detection
-- High variability between scenes
-- Multiple catastrophic failures in low-cloud conditions
-
-Although it occasionally performed adequately under simple cloudy conditions, it was not sufficiently robust for operational freshwater remote sensing workflows.
 
 ## Limitations
 Several important limitations should be considered when interpreting these results.
